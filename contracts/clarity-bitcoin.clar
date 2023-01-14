@@ -26,97 +26,6 @@
    0xf0 0xf1 0xf2 0xf3 0xf4 0xf5 0xf6 0xf7 0xf8 0xf9 0xfa 0xfb 0xfc 0xfd 0xfe 0xff
 ))
 
-;; List with 512 items, used for folding something 512 times
-(define-constant LIST_512 (list
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-))
-
-;; List with 256 items, used for folding something 256 times
-(define-constant LIST_256 (list
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-))
-
-;; List with 128 items, used for folding something 128 times
-(define-constant LIST_128 (list
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-))
-
-;; List with 64 items, used for folding something 64 times
-(define-constant LIST_64 (list
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-))
-
-;; List with 32 items, used for folding something 32 times
-(define-constant LIST_32 (list
-   true true true true true true true true true true true true true true true true
-   true true true true true true true true true true true true true true true true
-))
-
-;; List with 16 items, used for folding something 16 times
-(define-constant LIST_16 (list
-   true true true true true true true true true true true true true true true true
-))
-
-;; Convert a 1-byte buff into a uint.
-(define-read-only (buff-to-u8 (byte (buff 1)))
-    (buff-to-uint-le byte))
-
 ;; Top-level function to read a slice of a given size from a given (buff 1024), starting at a given offset.
 ;; Returns (ok (buff 1024)) on success, and it contains "buff[offset..(offset+size)]"
 ;; Returns (err ERR-OUT-OF-BOUNDS) if the slice offset and/or size would copy a range of bytes outside the given buffer.
@@ -197,7 +106,7 @@
     (let (
         (ptr (get index ctx))
         (tx (get txbuff ctx))
-        (byte (buff-to-u8 (unwrap! (element-at tx ptr)
+        (byte (buff-to-uint-le (unwrap! (element-at tx ptr)
                             (err ERR-OUT-OF-BOUNDS))))
     )
     (if (<= byte u252)
