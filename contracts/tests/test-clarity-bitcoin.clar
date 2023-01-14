@@ -38,7 +38,7 @@
     )
 )
 
-(define-private (test-parse-simple-bitcoin-txs)
+(define-public (test-parse-simple-bitcoin-txs)
     (begin
         (print "test-parse-simple-bitcoin-txs 0")
         (asserts! (test-parse-tx
@@ -172,7 +172,7 @@
     )
 )
 
-(define-private (test-parse-bitcoin-headers)
+(define-public (test-parse-bitcoin-headers)
     (begin
         (print "test-parse-bitcoin-headers 0")
         (asserts! (test-parse-header
@@ -191,7 +191,7 @@
     )
 )
 
-(define-private (test-get-txid)
+(define-public (test-get-txid)
     (begin
         (print "test-get-txid")
         (asserts! (is-eq
@@ -203,7 +203,7 @@
     )
 )
 
-(define-private (test-verify-merkle-proof)
+(define-public (test-verify-merkle-proof)
     (begin
         (print "test-verify-merkle-proof")
         (asserts! (try! (contract-call? .clarity-bitcoin verify-merkle-proof
