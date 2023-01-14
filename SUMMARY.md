@@ -1,3 +1,5 @@
 # Table of contents
 
-* [Page 1](README.md)
+* [Introduction](README.md)
+* [The Contract](the-contract.md)
+* [Applications](applications.md)
