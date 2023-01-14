@@ -115,7 +115,7 @@
 
 ;; Convert a 1-byte buff into a uint.
 (define-read-only (buff-to-u8 (byte (buff 1)))
-    (unwrap-panic (index-of BUFF_TO_BYTE byte)))
+    (buff-to-uint-be byte))
 
 ;; Append a byte at the given index in the given data to acc.
 (define-read-only (inner-read-slice-1024 (ignored bool) (input { acc: (buff 1024), data: (buff 1024), index: uint }))
@@ -237,8 +237,7 @@
            (print "read slice")
            (print size)
            (ok
-             (get acc
-                 (fold inner-read-slice (list u512 u256 u128 u64 u32 u16 u8 u4 u2 u1) { acc: 0x, buffer: data, index: offset, remaining: size }))
+              (unwrap! (slice? data offset (+ offset size)) (err ERR-OUT-OF-BOUNDS))
            )
         )
     )
@@ -251,9 +250,7 @@
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (byte-1 (buff-to-u8 (unwrap! (element-at data base) (err ERR-OUT-OF-BOUNDS))))
-        (byte-2 (buff-to-u8 (unwrap! (element-at data (+ u1 base)) (err ERR-OUT-OF-BOUNDS))))
-        (ret (+ (* byte-2 u256) byte-1))
+        (ret (buff-to-uint-be (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2) (err ERR-OUT-OF-BOUNDS))))
     )
     (begin
        (print "read uint16")
@@ -272,11 +269,7 @@
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (byte-1 (buff-to-u8 (unwrap! (element-at data base) (err ERR-OUT-OF-BOUNDS))))
-        (byte-2 (buff-to-u8 (unwrap! (element-at data (+ u1 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-3 (buff-to-u8 (unwrap! (element-at data (+ u2 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-4 (buff-to-u8 (unwrap! (element-at data (+ u3 base)) (err ERR-OUT-OF-BOUNDS))))
-        (ret (+ (* byte-4 u16777216) (* byte-3 u65536) (* byte-2 u256) byte-1))
+        (ret (buff-to-uint-be (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4) (err ERR-OUT-OF-BOUNDS))))
     )
     (begin
        (print "read uint32")
@@ -295,23 +288,7 @@
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (byte-1 (buff-to-u8 (unwrap! (element-at data base) (err ERR-OUT-OF-BOUNDS))))
-        (byte-2 (buff-to-u8 (unwrap! (element-at data (+ u1 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-3 (buff-to-u8 (unwrap! (element-at data (+ u2 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-4 (buff-to-u8 (unwrap! (element-at data (+ u3 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-5 (buff-to-u8 (unwrap! (element-at data (+ u4 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-6 (buff-to-u8 (unwrap! (element-at data (+ u5 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-7 (buff-to-u8 (unwrap! (element-at data (+ u6 base)) (err ERR-OUT-OF-BOUNDS))))
-        (byte-8 (buff-to-u8 (unwrap! (element-at data (+ u7 base)) (err ERR-OUT-OF-BOUNDS))))
-        (ret (+
-           (* byte-8 u72057594037927936)
-           (* byte-7 u281474976710656)
-           (* byte-6 u1099511627776)
-           (* byte-5 u4294967296)
-           (* byte-4 u16777216)
-           (* byte-3 u65536)
-           (* byte-2 u256)
-           byte-1))
+        (ret (buff-to-uint-be (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8) (err ERR-OUT-OF-BOUNDS))))
     )
     (begin
        (print "read uint64")
@@ -637,7 +614,7 @@
 )
 
 (define-read-only (get-bc-h-hash (bh uint))
-  (get-block-info? burnchain-header-hash bh))
+  (get-burn-block-info? header-hash bh))
 
 ;; Verify that a block header hashes to a burnchain header hash at a given height.
 ;; Returns true if so; false if not.
