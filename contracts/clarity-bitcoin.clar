@@ -637,7 +637,7 @@
 )
 
 (define-read-only (get-bc-h-hash (bh uint))
-  (get-burn-block-info? header-hash bh))
+  (get-block-info? burnchain-header-hash bh))
 
 ;; Verify that a block header hashes to a burnchain header hash at a given height.
 ;; Returns true if so; false if not.
