@@ -7,200 +7,13 @@
     )
 )
 
-(define-private (check-slices (expected-slice (buff 1024)) (test-data { slice-data: (buff 1024), offset: uint, result: bool }))
-    (let (
-        (slice-data (get slice-data test-data))
-        (subslice (match (read-slice slice-data (get offset test-data) (len expected-slice))
-            subs subs
-            error
-                (begin
-                    (print "failed to read subslice")
-                    (print expected-slice)
-                    (print test-data)
-                    (print error)
-                    0xdeadbeef
-                )
-            )
-        )
-    )
-    (begin
-        (if (not (is-eq expected-slice subslice))
-            (begin
-                (print "subslice failure")
-                (print expected-slice)
-                (print subslice)
-                { slice-data: slice-data, offset: (get offset test-data), result: false }
-            )
-            { slice-data: slice-data, offset: (get offset test-data), result: (get result test-data) }
-        )
-    ))
-)
-                
-
-(define-private (read-slice-prefixes)
-    (let (
-        (test-slice 0x00112233445566778899aabbccddeeff)
-        (outputs (list
-            0x
-            0x00
-            0x0011
-            0x001122
-            0x00112233
-            0x0011223344
-            0x001122334455
-            0x00112233445566
-            0x0011223344556677
-            0x001122334455667788
-            0x00112233445566778899
-            0x00112233445566778899aa
-            0x00112233445566778899aabb
-            0x00112233445566778899aabbcc
-            0x00112233445566778899aabbccdd
-            0x00112233445566778899aabbccddee
-            0x00112233445566778899aabbccddeeff
-        ))
-    )
-    (begin
-        (print "read-slice-prefixes")
-        (asserts! (get result (fold check-slices outputs { slice-data: test-slice, offset: u0, result: true }))
-            (err u0))
-        (ok u0)
-    ))
-)
-
-(define-private (read-slice-middles)
-    (let (
-        (test-slice 0x00112233445566778899aabbccddeeff)
-        (outputs (list
-            0x
-            0x66
-            0x6677
-            0x667788
-            0x66778899
-            0x66778899aa
-            0x66778899aabb
-            0x66778899aabbcc
-            0x66778899aabbccdd
-            0x66778899aabbccddee
-            0x66778899aabbccddeeff
-        ))
-    )
-    (begin
-        (print "read-slice-middles")
-        (asserts! (get result (fold check-slices outputs { slice-data: test-slice, offset: u6, result: true }))
-            (err u0))
-        (ok u0)
-    ))
-)
-
-(define-private (read-ints)
-    (begin
-        (print "test-read-ints")
-        (asserts! (is-eq u0 (get uint16 (try! (read-uint16 { txbuff: 0x0000, index: u0 })))) (err u0))
-        (asserts! (is-eq u1 (get uint16 (try! (read-uint16 { txbuff: 0x0100, index: u0 })))) (err u1)) 
-        (asserts! (is-eq u65535 (get uint16 (try! (read-uint16 { txbuff: 0xffff, index: u0 })))) (err u2))
-
-        (asserts! (is-eq u0 (get uint32 (try! (read-uint32 { txbuff: 0x00000000, index: u0 })))) (err u3))
-        (asserts! (is-eq u1 (get uint32 (try! (read-uint32 { txbuff: 0x01000000, index: u0 })))) (err u4))
-        (asserts! (is-eq u256 (get uint32 (try! (read-uint32 { txbuff: 0x00010000, index: u0 })))) (err u5))
-        (asserts! (is-eq u65536 (get uint32 (try! (read-uint32 { txbuff: 0x00000100, index: u0 })))) (err u6))
-        (asserts! (is-eq u4294967295 (get uint32 (try! (read-uint32 { txbuff: 0xffffffff, index: u0 })))) (err u7))
-
-        (asserts! (is-eq u0 (get uint64 (try! (read-uint64 { txbuff: 0x0000000000000000, index: u0 })))) (err u8))
-        (asserts! (is-eq u1 (get uint64 (try! (read-uint64 { txbuff: 0x0100000000000000, index: u0 })))) (err u9))
-        (asserts! (is-eq u65536 (get uint64 (try! (read-uint64 { txbuff: 0x0000010000000000, index: u0 })))) (err u10))
-        (asserts! (is-eq u4294967296 (get uint64 (try! (read-uint64 { txbuff: 0x0000000001000000, index: u0 })))) (err u11))
-        (asserts! (is-eq u18446744073709551615 (get uint64 (try! (read-uint64 { txbuff: 0xffffffffffffffff, index: u0 })))) (err u12))
-
-        ;; ignores trailing suffixes
-        (asserts! (is-eq u0 (get uint16 (try! (read-uint16 { txbuff: 0x0000ff, index: u0 })))) (err u20))
-        (asserts! (is-eq u1 (get uint16 (try! (read-uint16 { txbuff: 0x0100ff, index: u0 })))) (err u21)) 
-        (asserts! (is-eq u65535 (get uint16 (try! (read-uint16 { txbuff: 0xffff00, index: u0 })))) (err u22))
-
-        (asserts! (is-eq u0 (get uint32 (try! (read-uint32 { txbuff: 0x00000000ff, index: u0 })))) (err u23))
-        (asserts! (is-eq u1 (get uint32 (try! (read-uint32 { txbuff: 0x01000000ff, index: u0 })))) (err u24))
-        (asserts! (is-eq u256 (get uint32 (try! (read-uint32 { txbuff: 0x00010000ff, index: u0 })))) (err u25))
-        (asserts! (is-eq u65536 (get uint32 (try! (read-uint32 { txbuff: 0x00000100ff, index: u0 })))) (err u26))
-        (asserts! (is-eq u4294967295 (get uint32 (try! (read-uint32 { txbuff: 0xffffffff00, index: u0 })))) (err u27))
-
-        (asserts! (is-eq u0 (get uint64 (try! (read-uint64 { txbuff: 0x0000000000000000ff, index: u0 })))) (err u28))
-        (asserts! (is-eq u1 (get uint64 (try! (read-uint64 { txbuff: 0x0100000000000000ff, index: u0 })))) (err u29))
-        (asserts! (is-eq u65536 (get uint64 (try! (read-uint64 { txbuff: 0x0000010000000000ff, index: u0 })))) (err u30))
-        (asserts! (is-eq u4294967296 (get uint64 (try! (read-uint64 { txbuff: 0x0000000001000000ff, index: u0 })))) (err u31))
-        (asserts! (is-eq u18446744073709551615 (get uint64 (try! (read-uint64 { txbuff: 0xffffffffffffffff00, index: u0 })))) (err u32))
-
-        ;; ignores prefixes
-        (asserts! (is-eq u0 (get uint16 (try! (read-uint16 { txbuff: 0xff0000, index: u1 })))) (err u40))
-        (asserts! (is-eq u1 (get uint16 (try! (read-uint16 { txbuff: 0xff0100, index: u1 })))) (err u41)) 
-        (asserts! (is-eq u65535 (get uint16 (try! (read-uint16 { txbuff: 0x00ffff, index: u1 })))) (err u42))
-
-        (asserts! (is-eq u0 (get uint32 (try! (read-uint32 { txbuff: 0xff00000000, index: u1 })))) (err u43))
-        (asserts! (is-eq u1 (get uint32 (try! (read-uint32 { txbuff: 0xff01000000, index: u1 })))) (err u44))
-        (asserts! (is-eq u256 (get uint32 (try! (read-uint32 { txbuff: 0xff00010000, index: u1 })))) (err u45))
-        (asserts! (is-eq u65536 (get uint32 (try! (read-uint32 { txbuff: 0xff00000100, index: u1 })))) (err u46))
-        (asserts! (is-eq u4294967295 (get uint32 (try! (read-uint32 { txbuff: 0x00ffffffff, index: u1 })))) (err u47))
-
-        (asserts! (is-eq u0 (get uint64 (try! (read-uint64 { txbuff: 0xff0000000000000000, index: u1 })))) (err u48))
-        (asserts! (is-eq u1 (get uint64 (try! (read-uint64 { txbuff: 0xff0100000000000000, index: u1 })))) (err u49))
-        (asserts! (is-eq u65536 (get uint64 (try! (read-uint64 { txbuff: 0xff0000010000000000, index: u1 })))) (err u50))
-        (asserts! (is-eq u4294967296 (get uint64 (try! (read-uint64 { txbuff: 0xff0000000001000000, index: u1 })))) (err u51))
-        (asserts! (is-eq u18446744073709551615 (get uint64 (try! (read-uint64 { txbuff: 0x00ffffffffffffffff, index: u1 })))) (err u52))
-
-        (ok true)
-    )
-)
-
-(define-private (read-varints)
-    (begin
-        (print "test-read-varints")
-        (asserts! (is-eq u1 (get varint (try! (read-varint { txbuff: 0x01, index: u0 })))) (err u0))
-        (asserts! (is-eq u252 (get varint (try! (read-varint { txbuff: 0xfc, index: u0 })))) (err u1))
-        (asserts! (is-eq u253 (get varint (try! (read-varint { txbuff: 0xfdfd00, index: u0 })))) (err u2))
-        (asserts! (is-eq u65535 (get varint (try! (read-varint { txbuff: 0xfdffff, index: u0 })))) (err u3))
-        (asserts! (is-eq u65536 (get varint (try! (read-varint { txbuff: 0xfe00000100, index: u0 })))) (err u4))
-        (asserts! (is-eq u4294967295 (get varint (try! (read-varint { txbuff: 0xfeffffffff, index: u0 })))) (err u5))
-        (asserts! (is-eq u4294967296 (get varint (try! (read-varint { txbuff: 0xff0000000001000000, index: u0 })))) (err u6))
-        (asserts! (is-eq u18446744073709551615 (get varint (try! (read-varint { txbuff: 0xffffffffffffffffff, index: u0 })))) (err u7))
-
-        ;; index advances appropriately
-        (asserts! (is-eq u1 (get index (get ctx (try! (read-varint { txbuff: 0x01, index: u0 }))))) (err u10))
-        (asserts! (is-eq u1 (get index (get ctx (try! (read-varint { txbuff: 0xfc, index: u0 }))))) (err u11))
-        (asserts! (is-eq u3 (get index (get ctx (try! (read-varint { txbuff: 0xfdfd00, index: u0 }))))) (err u12))
-        (asserts! (is-eq u3 (get index (get ctx (try! (read-varint { txbuff: 0xfdffff, index: u0 }))))) (err u13))
-        (asserts! (is-eq u5 (get index (get ctx (try! (read-varint { txbuff: 0xfe00000100, index: u0 }))))) (err u14))
-        (asserts! (is-eq u5 (get index (get ctx (try! (read-varint { txbuff: 0xfeffffffff, index: u0 }))))) (err u15))
-        (asserts! (is-eq u9 (get index (get ctx (try! (read-varint { txbuff: 0xff0000000001000000, index: u0 }))))) (err u16))
-        (asserts! (is-eq u9 (get index (get ctx (try! (read-varint { txbuff: 0xffffffffffffffffff, index: u0 }))))) (err u17))
-        (ok true)
-    )
-)
-
-(define-private (read-varslices)
-    (begin
-        (print "test-read-varslices")
-        (asserts! (is-eq 0x01020304 (get varslice (try! (read-varslice { txbuff: 0x040102030405060708, index: u0 })))) (err u0))
-        (asserts! (is-eq u5 (get index (get ctx (try! (read-varslice { txbuff: 0x040102030405060708, index: u0 }))))) (err u1))
-
-        (asserts! (is-eq 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
-                         (get varslice (try! (read-varslice { txbuff: 0xfd0001000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405, index: u0 }))))
-                   (err u10))
-        
-        (asserts! (is-eq u259 (get index (get ctx
-                         (try! (read-varslice { txbuff: 0xfd0001000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000102030405, index: u0 })))))
-                   (err u11))
-
-
-        (ok true)
-    )
-)
-
 (define-private (test-parse-tx (tx (buff 1024)) (expected {
                                                     version: uint,
                                                     locktime: uint,
                                                     ins: (list 8 { outpoint: { hash: (buff 32), index: uint }, scriptSig: (buff 256), sequence: uint }),
                                                     outs: (list 8 { value: uint, scriptPubKey: (buff 128) })
                                                 }))
-    (match (parse-tx tx)
+    (match (contract-call? .clarity-bitcoin parse-tx tx)
         ok-tx
              (if (is-eq ok-tx expected)
                 true
@@ -334,7 +147,7 @@
                                                          nbits: uint,
                                                          nonce: uint
                                                       }))
-    (match (parse-block-header header)
+    (match (contract-call? .clarity-bitcoin parse-block-header header)
         ok-header
              (if (is-eq ok-header expected)
                 true
@@ -383,7 +196,7 @@
         (print "test-get-txid")
         (asserts! (is-eq
             0x74d350ca44c324f4643274b98801f9a023b2b8b72e8e895879fd9070a68f7f1f
-            (get-txid 0x02000000019b69251560ea1143de610b3c6630dcf94e12000ceba7d40b136bfb67f5a9e4eb000000006b483045022100a52f6c484072528334ac4aa5605a3f440c47383e01bc94e9eec043d5ad7e2c8002206439555804f22c053b89390958083730d6a66c1b711f6b8669a025dbbf5575bd012103abc7f1683755e94afe899029a8acde1480716385b37d4369ba1bed0a2eb3a0c5feffffff022864f203000000001976a914a2420e28fbf9b3bd34330ebf5ffa544734d2bfc788acb1103955000000001976a9149049b676cf05040103135c7342bcc713a816700688ac3bc50700))
+            (contract-call? .clarity-bitcoin get-txid 0x02000000019b69251560ea1143de610b3c6630dcf94e12000ceba7d40b136bfb67f5a9e4eb000000006b483045022100a52f6c484072528334ac4aa5605a3f440c47383e01bc94e9eec043d5ad7e2c8002206439555804f22c053b89390958083730d6a66c1b711f6b8669a025dbbf5575bd012103abc7f1683755e94afe899029a8acde1480716385b37d4369ba1bed0a2eb3a0c5feffffff022864f203000000001976a914a2420e28fbf9b3bd34330ebf5ffa544734d2bfc788acb1103955000000001976a9149049b676cf05040103135c7342bcc713a816700688ac3bc50700))
             (err u0))
 
         (ok true)
@@ -393,8 +206,8 @@
 (define-private (test-verify-merkle-proof)
     (begin
         (print "test-verify-merkle-proof")
-        (asserts! (try! (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5afd46cf217ad9)      ;; txid (but big-endian)
+        (asserts! (try! (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5afd46cf217ad9)      ;; txid (but big-endian)
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2f6f130bbe      ;; merkle root (from block 150000)
             {
                 hashes: (list
@@ -408,8 +221,8 @@
             }))
             (err u0))
 
-        (asserts! (not (try! (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)      ;; CORRUPTED
+        (asserts! (not (try! (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)      ;; CORRUPTED
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2f6f130bbe
             {
                 hashes: (list
@@ -423,8 +236,8 @@
             })))
             (err u1))
 
-        (asserts! (not (try! (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5afd46cf217ad9)
+        (asserts! (not (try! (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5afd46cf217ad9)
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2e6f130bbe                      ;; CORRUPTED
             {
                 hashes: (list
@@ -438,8 +251,8 @@
             })))
             (err u2))
 
-        (asserts! (not (try! (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
+        (asserts! (not (try! (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2f6f130bbe
             {
                 hashes: (list
@@ -453,8 +266,8 @@
             })))
             (err u3))
 
-        (asserts! (not (try! (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
+        (asserts! (not (try! (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2f6f130bbe
             {
                 hashes: (list
@@ -468,8 +281,8 @@
             })))
             (err u4))
         
-        (asserts! (not (try! (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
+        (asserts! (not (try! (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2f6f130bbe
             {
                 hashes: (list
@@ -483,8 +296,8 @@
             })))
             (err u5))
 
-        (asserts! (is-eq ERR-PROOF-TOO-SHORT (unwrap-err-panic (verify-merkle-proof
-            (reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
+        (asserts! (is-eq ERR-PROOF-TOO-SHORT (unwrap-err-panic (contract-call? .clarity-bitcoin verify-merkle-proof
+            (contract-call? .clarity-bitcoin reverse-buff32 0x25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5aed46cf217ad9)
             0xb152eca4364850f3424c7ac2b337d606c5ca0a3f96f1554f8db33d2f6f130bbe
             {
                 hashes: (list
@@ -504,16 +317,6 @@
 (define-public (unit-tests)
     (begin
         (print "unit tests")
-        (asserts! (is-ok (read-slice-prefixes))
-            (err u0))
-        (asserts! (is-ok (read-slice-middles))
-            (err u1))
-        (asserts! (is-ok (read-ints))
-            (err u2))
-        (asserts! (is-ok (read-varints))
-            (err u3))
-        (asserts! (is-ok (read-varslices))
-            (err u4))
         (asserts! (is-ok (test-parse-simple-bitcoin-txs))
             (err u5))
         (asserts! (is-ok (test-parse-bitcoin-headers))
@@ -526,3 +329,10 @@
     )
 )
 
+;; Error codes
+(define-constant ERR-OUT-OF-BOUNDS u1)
+(define-constant ERR-TOO-MANY-TXINS u2)
+(define-constant ERR-TOO-MANY-TXOUTS u3)
+(define-constant ERR-VARSLICE-TOO-LONG u4)
+(define-constant ERR-BAD-HEADER u5)
+(define-constant ERR-PROOF-TOO-SHORT u6)
