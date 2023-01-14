@@ -115,117 +115,7 @@
 
 ;; Convert a 1-byte buff into a uint.
 (define-read-only (buff-to-u8 (byte (buff 1)))
-    (buff-to-uint-be byte))
-
-;; Append a byte at the given index in the given data to acc.
-(define-read-only (inner-read-slice-1024 (ignored bool) (input { acc: (buff 1024), data: (buff 1024), index: uint }))
-    (let (
-        (acc (get acc input))
-        (data (get data input))
-        (ctr (get index input))
-        (byte (unwrap-panic (element-at data ctr)))
-    )
-    {
-        acc: (unwrap-panic (as-max-len? (concat acc byte) u1024)),
-        data: data,
-        index: (+ u1 ctr)
-    })
-)
-
-;; Read 512 bytes from data, starting at index.  Return the 512-byte slice.
-(define-read-only (read-slice-512 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 LIST_512 { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 256 bytes from data, starting at index.  Return the 256-byte slice.
-(define-read-only (read-slice-256 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 LIST_256 { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 128 bytes from data, starting at index.  Return the 128-byte slice.
-(define-read-only (read-slice-128 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 LIST_128 { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 64 bytes from data, starting at index.  Return the 64-byte slice.
-(define-read-only (read-slice-64 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 LIST_64 { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 32 bytes from data, starting at index.  Return the 32-byte slice.
-(define-read-only (read-slice-32 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 LIST_32 { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 16 bytes from data, starting at index.  Return the 16-byte slice.
-(define-read-only (read-slice-16 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 LIST_16 { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 8 bytes from data, starting at index.  Return the 8-byte slice.
-(define-read-only (read-slice-8 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 (list true true true true true true true true) { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 4 bytes from data, starting at index.  Return the 4-byte slice.
-(define-read-only (read-slice-4 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 (list true true true true) { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 2 bytes from data, starting at index.  Return the 2-byte slice.
-(define-read-only (read-slice-2 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 (list true true) { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read 1 byte from data, starting at index.  Return the 1-byte slice.
-(define-read-only (read-slice-1 (input { data: (buff 1024), index: uint }))
-    (get acc
-        (fold inner-read-slice-1024 (list true) { acc: 0x, data: (get data input), index: (get index input) })))
-
-;; Read a fixed-sized chunk of data from a given buffer (up to remaining bytes), starting at index, and append it to acc.
-;; chunk_size must be a power of 2, up to 1024
-(define-read-only (inner-read-slice (chunk_size uint) (input { acc: (buff 1024), buffer: (buff 1024), index: uint, remaining: uint }))
-    (let (
-        (ctr (get index input))
-        (remaining (get remaining input))
-    )
-    (if (is-eq u0 remaining)
-        ;; done reading
-        input
-        (let (
-            (acc (get acc input))
-            (databuff (get buffer input))
-        )
-        (if (> chunk_size remaining)
-            ;; chunk size too big for remainder, so just skip it.
-            input
-            ;; we have at least chunk_size bytes to read!
-            ;; dispatch to the right fixed-size slice reader.
-            (if (is-eq chunk_size u512)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-512 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u256)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-256 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u128)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-128 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u64)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-64 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u32)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-32 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u16)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-16 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u8)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-8 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u4)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-4 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u2)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-2 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-            (if (is-eq chunk_size u1)
-                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-1 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
-                { acc: acc, buffer: databuff, index: ctr, remaining: remaining }
-            ))))))))))
-        ))
-    ))
-)
+    (buff-to-uint-le byte))
 
 ;; Top-level function to read a slice of a given size from a given (buff 1024), starting at a given offset.
 ;; Returns (ok (buff 1024)) on success, and it contains "buff[offset..(offset+size)]"
@@ -243,14 +133,14 @@
     )
 )
 
-;; Reads the next two bytes from txbuff as a big-endian 16-bit integer, and updates the index.
+;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint16 (ctx { txbuff: (buff 1024), index: uint }))
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (ret (buff-to-uint-be (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2) (err ERR-OUT-OF-BOUNDS))))
+        (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2) (err ERR-OUT-OF-BOUNDS))))
     )
     (begin
        (print "read uint16")
@@ -262,14 +152,14 @@
     ))
 )
 
-;; Reads the next four bytes from txbuff as a big-endian 32-bit integer, and updates the index.
+;; Reads the next four bytes from txbuff as a little-endian 32-bit integer, and updates the index.
 ;; Returns (ok { uint32: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint32 (ctx { txbuff: (buff 1024), index: uint }))
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (ret (buff-to-uint-be (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4) (err ERR-OUT-OF-BOUNDS))))
+        (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4) (err ERR-OUT-OF-BOUNDS))))
     )
     (begin
        (print "read uint32")
@@ -281,14 +171,14 @@
     ))
 )
 
-;; Reads the next eight bytes from txbuff as a big-endian 64-bit integer, and updates the index.
+;; Reads the next eight bytes from txbuff as a little-endian 64-bit integer, and updates the index.
 ;; Returns (ok { uint64: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint64 (ctx { txbuff: (buff 1024), index: uint }))
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (ret (buff-to-uint-be (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8) (err ERR-OUT-OF-BOUNDS))))
+        (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8) (err ERR-OUT-OF-BOUNDS))))
     )
     (begin
        (print "read uint64")
@@ -392,7 +282,7 @@
              { hash-input: input, hash-output: 0x }))
 )
 
-;; Reads a big-endian hash -- consume the next 32 bytes, and reverse them.
+;; Reads a little-endian hash -- consume the next 32 bytes, and reverse them.
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 1024), index: uint } }) on success, and updates the index.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-hashslice (old-ctx { txbuff: (buff 1024), index: uint }))
@@ -624,7 +514,7 @@
         false
     ))
 
-;; Get the txid of a transaction, but big-endian.
+;; Get the txid of a transaction, but little-endian.
 ;; This is the reverse of what you see on block explorers.
 (define-read-only (get-reversed-txid (tx (buff 1024)))
     (sha256 (sha256 tx)))
@@ -686,7 +576,7 @@
 ;; * The index in the block where the transaction can be found (starting from 0),
 ;; * The list of hashes that link the txid to the merkle root,
 ;; * The depth of the block's merkle tree (required because Bitcoin does not identify merkle tree nodes as being leaves or intermediates).
-;; The _reversed_ txid is required because that's the order (big-endian) processes them in.
+;; The _reversed_ txid is required because that's the order (little-endian) processes them in.
 ;; The tx-index is required because it tells us the left/right traversals we'd make if we were walking down the tree from root to transaction,
 ;; and is thus used to deduce the order in which to hash the intermediate hashes with one another to link the txid to the merkle root.
 ;; Returns (ok true) if the proof is valid.
@@ -713,7 +603,7 @@
 ;; The first element in hashes must be the given transaction's sibling transaction's ID.  This and the given transaction's txid are hashed to
 ;; calculate the parent hash in the merkle tree, which is then hashed with the *next* hash in the proof, and so on and so forth, until the final
 ;; hash can be compared against the block header's merkle root field.  The tx-index tells us in which order to hash each pair of siblings.
-;; Note that the proof hashes -- including the sibling txid -- must be _big-endian_ hashes, because this is how Bitcoin generates them.
+;; Note that the proof hashes -- including the sibling txid -- must be _little-endian_ hashes, because this is how Bitcoin generates them.
 ;; This is the reverse of what you'd see in a block explorer!
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
