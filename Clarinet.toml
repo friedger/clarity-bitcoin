@@ -9,7 +9,7 @@ cache_dir = "./.cache"
 [contracts.clarity-bitcoin]
 path = "contracts/clarity-bitcoin.clar"
 
-[contracts.tests-clarity-bitcoin]
+[contracts.test-clarity-bitcoin]
 path = "contracts/tests/test-clarity-bitcoin.clar"
 
 [repl.analysis]
