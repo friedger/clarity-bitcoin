@@ -26,61 +26,301 @@
    0xf0 0xf1 0xf2 0xf3 0xf4 0xf5 0xf6 0xf7 0xf8 0xf9 0xfa 0xfb 0xfc 0xfd 0xfe 0xff
 ))
 
+;; List with 512 items, used for folding something 512 times
+(define-constant LIST_512 (list
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+))
+
+;; List with 256 items, used for folding something 256 times
+(define-constant LIST_256 (list
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+))
+
+;; List with 128 items, used for folding something 128 times
+(define-constant LIST_128 (list
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+))
+
+;; List with 64 items, used for folding something 64 times
+(define-constant LIST_64 (list
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+))
+
+;; List with 32 items, used for folding something 32 times
+(define-constant LIST_32 (list
+   true true true true true true true true true true true true true true true true
+   true true true true true true true true true true true true true true true true
+))
+
+;; List with 16 items, used for folding something 16 times
+(define-constant LIST_16 (list
+   true true true true true true true true true true true true true true true true
+))
+
+;; Convert a 1-byte buff into a uint.
+(define-read-only (buff-to-u8 (byte (buff 1)))
+    (unwrap-panic (index-of BUFF_TO_BYTE byte)))
+
+;; Append a byte at the given index in the given data to acc.
+(define-read-only (inner-read-slice-1024 (ignored bool) (input { acc: (buff 1024), data: (buff 1024), index: uint }))
+    (let (
+        (acc (get acc input))
+        (data (get data input))
+        (ctr (get index input))
+        (byte (unwrap-panic (element-at data ctr)))
+    )
+    {
+        acc: (unwrap-panic (as-max-len? (concat acc byte) u1024)),
+        data: data,
+        index: (+ u1 ctr)
+    })
+)
+
+;; Read 512 bytes from data, starting at index.  Return the 512-byte slice.
+(define-read-only (read-slice-512 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 LIST_512 { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 256 bytes from data, starting at index.  Return the 256-byte slice.
+(define-read-only (read-slice-256 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 LIST_256 { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 128 bytes from data, starting at index.  Return the 128-byte slice.
+(define-read-only (read-slice-128 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 LIST_128 { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 64 bytes from data, starting at index.  Return the 64-byte slice.
+(define-read-only (read-slice-64 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 LIST_64 { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 32 bytes from data, starting at index.  Return the 32-byte slice.
+(define-read-only (read-slice-32 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 LIST_32 { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 16 bytes from data, starting at index.  Return the 16-byte slice.
+(define-read-only (read-slice-16 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 LIST_16 { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 8 bytes from data, starting at index.  Return the 8-byte slice.
+(define-read-only (read-slice-8 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 (list true true true true true true true true) { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 4 bytes from data, starting at index.  Return the 4-byte slice.
+(define-read-only (read-slice-4 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 (list true true true true) { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 2 bytes from data, starting at index.  Return the 2-byte slice.
+(define-read-only (read-slice-2 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 (list true true) { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read 1 byte from data, starting at index.  Return the 1-byte slice.
+(define-read-only (read-slice-1 (input { data: (buff 1024), index: uint }))
+    (get acc
+        (fold inner-read-slice-1024 (list true) { acc: 0x, data: (get data input), index: (get index input) })))
+
+;; Read a fixed-sized chunk of data from a given buffer (up to remaining bytes), starting at index, and append it to acc.
+;; chunk_size must be a power of 2, up to 1024
+(define-read-only (inner-read-slice (chunk_size uint) (input { acc: (buff 1024), buffer: (buff 1024), index: uint, remaining: uint }))
+    (let (
+        (ctr (get index input))
+        (remaining (get remaining input))
+    )
+    (if (is-eq u0 remaining)
+        ;; done reading
+        input
+        (let (
+            (acc (get acc input))
+            (databuff (get buffer input))
+        )
+        (if (> chunk_size remaining)
+            ;; chunk size too big for remainder, so just skip it.
+            input
+            ;; we have at least chunk_size bytes to read!
+            ;; dispatch to the right fixed-size slice reader.
+            (if (is-eq chunk_size u512)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-512 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u256)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-256 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u128)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-128 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u64)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-64 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u32)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-32 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u16)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-16 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u8)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-8 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u4)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-4 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u2)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-2 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+            (if (is-eq chunk_size u1)
+                { acc: (unwrap-panic (as-max-len? (concat acc (read-slice-1 { data: databuff, index: ctr })) u1024)), buffer: databuff, index: (+ chunk_size ctr), remaining: (- remaining chunk_size) }
+                { acc: acc, buffer: databuff, index: ctr, remaining: remaining }
+            ))))))))))
+        ))
+    ))
+)
+
 ;; Top-level function to read a slice of a given size from a given (buff 1024), starting at a given offset.
 ;; Returns (ok (buff 1024)) on success, and it contains "buff[offset..(offset+size)]"
 ;; Returns (err ERR-OUT-OF-BOUNDS) if the slice offset and/or size would copy a range of bytes outside the given buffer.
 (define-read-only (read-slice (data (buff 1024)) (offset uint) (size uint))
-    (ok
-        (unwrap! (slice? data offset (+ offset size)) (err ERR-OUT-OF-BOUNDS))
+    (if (or (>= offset (len data)) (> (+ offset size) (len data)))
+        (err ERR-OUT-OF-BOUNDS)
+        (begin
+           (print "read slice")
+           (print size)
+           (ok
+             (get acc
+                 (fold inner-read-slice (list u512 u256 u128 u64 u32 u16 u8 u4 u2 u1) { acc: 0x, buffer: data, index: offset, remaining: size }))
+           )
+        )
     )
 )
 
-;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
+;; Reads the next two bytes from txbuff as a big-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint16 (ctx { txbuff: (buff 1024), index: uint }))
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2) (err ERR-OUT-OF-BOUNDS))))
+        (byte-1 (buff-to-u8 (unwrap! (element-at data base) (err ERR-OUT-OF-BOUNDS))))
+        (byte-2 (buff-to-u8 (unwrap! (element-at data (+ u1 base)) (err ERR-OUT-OF-BOUNDS))))
+        (ret (+ (* byte-2 u256) byte-1))
     )
-        (ok {
-            uint16: ret,
-            ctx: { txbuff: data, index: (+ u2 base) }
-        })
-    )
+    (begin
+       (print "read uint16")
+       (print ret)
+       (ok {
+           uint16: ret,
+           ctx: { txbuff: data, index: (+ u2 base) }
+       })
+    ))
 )
 
-;; Reads the next four bytes from txbuff as a little-endian 32-bit integer, and updates the index.
+;; Reads the next four bytes from txbuff as a big-endian 32-bit integer, and updates the index.
 ;; Returns (ok { uint32: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint32 (ctx { txbuff: (buff 1024), index: uint }))
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4) (err ERR-OUT-OF-BOUNDS))))
+        (byte-1 (buff-to-u8 (unwrap! (element-at data base) (err ERR-OUT-OF-BOUNDS))))
+        (byte-2 (buff-to-u8 (unwrap! (element-at data (+ u1 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-3 (buff-to-u8 (unwrap! (element-at data (+ u2 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-4 (buff-to-u8 (unwrap! (element-at data (+ u3 base)) (err ERR-OUT-OF-BOUNDS))))
+        (ret (+ (* byte-4 u16777216) (* byte-3 u65536) (* byte-2 u256) byte-1))
     )
-        (ok {
-            uint32: ret,
-            ctx: { txbuff: data, index: (+ u4 base) }
-        })
-    )
+    (begin
+       (print "read uint32")
+       (print ret)
+       (ok {
+           uint32: ret,
+           ctx: { txbuff: data, index: (+ u4 base) }
+       })
+    ))
 )
 
-;; Reads the next eight bytes from txbuff as a little-endian 64-bit integer, and updates the index.
+;; Reads the next eight bytes from txbuff as a big-endian 64-bit integer, and updates the index.
 ;; Returns (ok { uint64: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint64 (ctx { txbuff: (buff 1024), index: uint }))
     (let (
         (data (get txbuff ctx))
         (base (get index ctx))
-        (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8) (err ERR-OUT-OF-BOUNDS))))
+        (byte-1 (buff-to-u8 (unwrap! (element-at data base) (err ERR-OUT-OF-BOUNDS))))
+        (byte-2 (buff-to-u8 (unwrap! (element-at data (+ u1 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-3 (buff-to-u8 (unwrap! (element-at data (+ u2 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-4 (buff-to-u8 (unwrap! (element-at data (+ u3 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-5 (buff-to-u8 (unwrap! (element-at data (+ u4 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-6 (buff-to-u8 (unwrap! (element-at data (+ u5 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-7 (buff-to-u8 (unwrap! (element-at data (+ u6 base)) (err ERR-OUT-OF-BOUNDS))))
+        (byte-8 (buff-to-u8 (unwrap! (element-at data (+ u7 base)) (err ERR-OUT-OF-BOUNDS))))
+        (ret (+
+           (* byte-8 u72057594037927936)
+           (* byte-7 u281474976710656)
+           (* byte-6 u1099511627776)
+           (* byte-5 u4294967296)
+           (* byte-4 u16777216)
+           (* byte-3 u65536)
+           (* byte-2 u256)
+           byte-1))
     )
-        (ok {
-            uint64: ret,
-            ctx: { txbuff: data, index: (+ u8 base) }
-        })
-    )
+    (begin
+       (print "read uint64")
+       (print ret)
+       (ok {
+           uint64: ret,
+           ctx: { txbuff: data, index: (+ u8 base) }
+       })
+    ))
 )
 
 ;; Reads the next varint from txbuff, and updates the index.
@@ -90,32 +330,45 @@
     (let (
         (ptr (get index ctx))
         (tx (get txbuff ctx))
-        (byte (buff-to-uint-le (unwrap! (element-at tx ptr)
+        (byte (buff-to-u8 (unwrap! (element-at tx ptr)
                             (err ERR-OUT-OF-BOUNDS))))
     )
     (if (<= byte u252)
-        ;; given byte is the varint
-        (ok { varint: byte, ctx: { txbuff: tx, index: (+ u1 ptr) }})
+        (begin
+           (print "varint 1")
+           (print byte)
+           ;; given byte is the varint
+           (ok { varint: byte, ctx: { txbuff: tx, index: (+ u1 ptr) }})
+        )
         (if (is-eq byte u253)
             (let (
                 ;; next two bytes is the varint
                 (parsed-u16 (try! (read-uint16 { txbuff: tx, index: (+ u1 ptr) })))
             )
+            (begin
+                (print "varint 2")
+                (print (get uint16 parsed-u16))
                 (ok { varint: (get uint16 parsed-u16), ctx: (get ctx parsed-u16) })
-            )
+            ))
             (if (is-eq byte u254)
                 (let (
                     ;; next four bytes is the varint
                     (parsed-u32 (try! (read-uint32 { txbuff: tx, index: (+ u1 ptr) })))
                 )
+                (begin
+                    (print "varint 4")
+                    (print (get uint32 parsed-u32))
                     (ok { varint: (get uint32 parsed-u32), ctx: (get ctx parsed-u32) })
-                )
+                ))
                 (let (
                     ;; next eight bytes is the varint
                     (parsed-u64 (try! (read-uint64 { txbuff: tx, index: (+ u1 ptr) })))
                 )
-                (ok { varint: (get uint64 parsed-u64), ctx: (get ctx parsed-u64) })
-                )
+                (begin
+                    (print "varint 8")
+                    (print (get uint64 parsed-u64))
+                    (ok { varint: (get uint64 parsed-u64), ctx: (get ctx parsed-u64) })
+                ))
             )
         )
     ))
@@ -162,7 +415,7 @@
              { hash-input: input, hash-output: 0x }))
 )
 
-;; Reads a little-endian hash -- consume the next 32 bytes, and reverse them.
+;; Reads a big-endian hash -- consume the next 32 bytes, and reverse them.
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 1024), index: uint } }) on success, and updates the index.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-hashslice (old-ctx { txbuff: (buff 1024), index: uint }))
@@ -384,7 +637,7 @@
 )
 
 (define-read-only (get-bc-h-hash (bh uint))
-  (get-burn-block-info? header-hash bh))
+  (get-block-info? burnchain-header-hash bh))
 
 ;; Verify that a block header hashes to a burnchain header hash at a given height.
 ;; Returns true if so; false if not.
@@ -394,7 +647,7 @@
         false
     ))
 
-;; Get the txid of a transaction, but little-endian.
+;; Get the txid of a transaction, but big-endian.
 ;; This is the reverse of what you see on block explorers.
 (define-read-only (get-reversed-txid (tx (buff 1024)))
     (sha256 (sha256 tx)))
@@ -420,7 +673,13 @@
     (if (get verified state)
         state
         (if (>= ctr (get tree-depth state))
-            (merge state { verified: false })
+            (begin
+                (print "ctr exceeds proof length or tree depth")
+                (print ctr)
+                (print (get tree-depth state))
+                (print (len (get proof-hashes state)))
+                (merge state { verified: false })
+            )
             (let (
                 (path (get path state))
                 (is-left (is-bit-set path ctr))
@@ -433,8 +692,15 @@
                 (next-hash (sha256 (sha256 (concat h1 h2))))
                 (is-verified (and (is-eq (+ u1 ctr) (len proof-hashes)) (is-eq next-hash root-hash)))
             )
-            (merge state { cur-hash: next-hash, verified: is-verified })
-            )
+            (begin
+                (print "cur-hash")
+                (print cur-hash)
+                (print "next-hash")
+                (print h1)
+                (print h2)
+                (print next-hash)
+                (merge state { cur-hash: next-hash, verified: is-verified })
+            ))
         )
     )
 )
@@ -443,7 +709,7 @@
 ;; * The index in the block where the transaction can be found (starting from 0),
 ;; * The list of hashes that link the txid to the merkle root,
 ;; * The depth of the block's merkle tree (required because Bitcoin does not identify merkle tree nodes as being leaves or intermediates).
-;; The _reversed_ txid is required because that's the order (little-endian) processes them in.
+;; The _reversed_ txid is required because that's the order (big-endian) processes them in.
 ;; The tx-index is required because it tells us the left/right traversals we'd make if we were walking down the tree from root to transaction,
 ;; and is thus used to deduce the order in which to hash the intermediate hashes with one another to link the txid to the merkle root.
 ;; Returns (ok true) if the proof is valid.
@@ -470,7 +736,7 @@
 ;; The first element in hashes must be the given transaction's sibling transaction's ID.  This and the given transaction's txid are hashed to
 ;; calculate the parent hash in the merkle tree, which is then hashed with the *next* hash in the proof, and so on and so forth, until the final
 ;; hash can be compared against the block header's merkle root field.  The tx-index tells us in which order to hash each pair of siblings.
-;; Note that the proof hashes -- including the sibling txid -- must be _little-endian_ hashes, because this is how Bitcoin generates them.
+;; Note that the proof hashes -- including the sibling txid -- must be _big-endian_ hashes, because this is how Bitcoin generates them.
 ;; This is the reverse of what you'd see in a block explorer!
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
@@ -509,7 +775,7 @@
       outs: (list 8
         {value: (buff 8), scriptPubKey: (buff 128)}),
       locktime: (buff 4)}))
- (unwrap-panic (as-max-len? (concat (concat (concat (get version tx) (concat-ins (get ins tx))) (concat-outs (get outs tx))) (get locktime tx)) u1024)))
+ (unwrap-panic (as-max-len?  (concat (concat (concat (get version tx) (concat-ins (get ins tx))) (concat-outs (get outs tx))) (get locktime tx)) u1024)))
 
 (define-read-only (was-tx-mined (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
     (if (verify-block-header (concat-header block) (get height block))
