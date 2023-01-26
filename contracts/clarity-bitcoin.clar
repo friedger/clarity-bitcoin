@@ -448,7 +448,7 @@
 ;; * the block header corresponds to the block that was mined at the given Bitcoin height
 ;; * the transaction's merkle proof links it to the block header's merkle root.
 
-;; To verify that the merkle root is part of the block header there are two options: 
+;; To verify that the merkle root is part of the block header there are two options:
 ;; a) read the merkle root from the header buffer
 ;; b) build the header buffer from its parts including the merkle root
 ;;
@@ -473,6 +473,8 @@
     (was-tx-mined (get height block) tx (contract-call? .clarity-bitcoin-helper concat-header block) (get merkle-root block) proof)
 )
 
+;; Verify block header and merkle proof
+;; This function must only called with the merkle root of the provided header
 (define-private (was-tx-mined (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
     (if (verify-block-header header height)
         (verify-merkle-proof (get-reversed-txid tx) merkle-root proof)
