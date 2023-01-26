@@ -445,26 +445,35 @@
 ;; It takes the block header and block height, the transaction, and a merkle proof, and determines that:
 ;; * the block header corresponds to the block that was mined at the given Bitcoin height
 ;; * the transaction's merkle proof links it to the block header's merkle root.
-;; The proof is a list of sibling merkle tree nodes that allow us to calculate the parent node from two children nodes in each merkle tree level,
+
+;; To verify that the merkle root is part of the block header there are two options: 
+;; a) read the merkle root from the header buffer
+;; b) build the header buffer from its parts including the merkle root
+;;
+;; The merkle proof is a list of sibling merkle tree nodes that allow us to calculate the parent node from two children nodes in each merkle tree level,
 ;; the depth of the block's merkle tree, and the index in the block in which the given transaction can be found (starting from 0).
 ;; The first element in hashes must be the given transaction's sibling transaction's ID.  This and the given transaction's txid are hashed to
 ;; calculate the parent hash in the merkle tree, which is then hashed with the *next* hash in the proof, and so on and so forth, until the final
 ;; hash can be compared against the block header's merkle root field.  The tx-index tells us in which order to hash each pair of siblings.
 ;; Note that the proof hashes -- including the sibling txid -- must be _little-endian_ hashes, because this is how Bitcoin generates them.
 ;; This is the reverse of what you'd see in a block explorer!
+;;
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
-(define-read-only (was-tx-mined-compact (block { header: (buff 80), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
-    (if (verify-block-header (get header block) (get height block))
-        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 (get merkle-root (try! (parse-block-header (get header block))))) proof)
-        (ok false)
-    )
+
+(define-read-only (was-tx-mined-header-buff (header (buff 80)) (height uint) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
+    (let ((block (try! (parse-block-header header))))
+      (was-tx-mined height tx header (get merkle-root block) proof))
 )
 
-(define-read-only (was-tx-mined (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
-    (if (verify-block-header (contract-call? .clarity-bitcoin-helper concat-header block) (get height block))
-        (verify-merkle-proof (get-reversed-txid tx) (get merkle-root block) proof)
+(define-read-only (was-tx-mined-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
+    (was-tx-mined (get height block) tx (contract-call? .clarity-bitcoin-helper concat-header block) (get merkle-root block) proof)
+)
+
+(define-private (was-tx-mined (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
+    (if (verify-block-header header height)
+        (verify-merkle-proof (get-reversed-txid tx) merkle-root proof)
         (err u1)
     )
 )
