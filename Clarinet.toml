@@ -21,7 +21,7 @@ path = "contracts/clarity-bitcoin-helper.clar"
 clarity_version = 2
 epoch = 2.1
 
-[contracts.example-1]
+[contracts.send-to-first-input]
 path = "contracts/examples/sent-to-first-input.clar"
 clarity_version = 2
 epoch = 2.1
