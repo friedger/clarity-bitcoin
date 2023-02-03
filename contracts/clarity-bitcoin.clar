@@ -308,7 +308,7 @@
 ;; * if the ith bit is 0, then cur-hash is hashed before the next proof-hash (cur-hash is "left").
 ;; * if the ith bit is 1, then the next proof-hash is hashed before cur-hash (cur-hash is "right").
 ;; The proof verifies if cur-hash is equal to root-hash, and we're out of proof-hashes to check.
-(define-read-only (inner-merkle-proof-verify (ctr uint) (state { path: uint, root-hash: (buff 32), proof-hashes: (list 12 (buff 32)), tree-depth: uint, cur-hash: (buff 32), verified: bool}))
+(define-read-only (inner-merkle-proof-verify (ctr uint) (state { path: uint, root-hash: (buff 32), proof-hashes: (list 14 (buff 32)), tree-depth: uint, cur-hash: (buff 32), verified: bool}))
     (if (get verified state)
         state
         (if (>= ctr (get tree-depth state))
@@ -335,13 +335,13 @@
 ;; Returns (ok true) if the proof is valid.
 ;; Returns (ok false) if the proof is invalid.
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof's hashes aren't long enough to link the txid to the merkle root.
-(define-read-only (verify-merkle-proof (reversed-txid (buff 32)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint}))
+(define-read-only (verify-merkle-proof (reversed-txid (buff 32)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (if (> (get tree-depth proof) (len (get hashes proof)))
         (err ERR-PROOF-TOO-SHORT)
         (ok
           (get verified
               (fold inner-merkle-proof-verify
-                  (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11)
+                  (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13)
                   { path: (+ (pow u2 (get tree-depth proof)) (get tx-index proof)), root-hash: merkle-root, proof-hashes: (get hashes proof), cur-hash: reversed-txid, tree-depth: (get tree-depth proof), verified: false})))))
 
 ;; Top-level verification code to determine whether or not a Bitcoin transaction was mined in a prior Bitcoin block.
@@ -365,16 +365,16 @@
 ;; Returns (ok false) if not.
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
 
-(define-read-only (was-tx-mined-header-buff (header (buff 80)) (height uint) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint}))
+(define-read-only (was-tx-mined-header-buff (header (buff 80)) (height uint) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (let ((block (try! (parse-block-header header))))
       (was-tx-mined height tx header (get merkle-root block) proof)))
 
-(define-read-only (was-tx-mined-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint}))
+(define-read-only (was-tx-mined-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (was-tx-mined (get height block) tx (contract-call? .clarity-bitcoin-helper concat-header block) (get merkle-root block) proof))
 
 ;; Verify block header and merkle proof
 ;; This function must only called with the merkle root of the provided header
-(define-private (was-tx-mined (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint}))
+(define-private (was-tx-mined (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (if (verify-block-header header height)
         (verify-merkle-proof (get-reversed-txid tx) merkle-root proof)
         (err u1)))
