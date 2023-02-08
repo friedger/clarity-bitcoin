@@ -38,15 +38,15 @@ export class MerkleTree {
 
   public getProofElements(investigatedEntryIndex: number): string[] {
     let level = 0;
-    let levels = this.hashes[this.hashes.length - 1].level;
+    const levels = this.hashes[this.hashes.length - 1].level;
     let relevantIndex = investigatedEntryIndex;
-    let proofElements: string[] = [];
+    const proofElements: string[] = [];
     while (level < levels) {
       relevantIndex =
         level === 0
           ? investigatedEntryIndex
           : this.getRelevantIndex(relevantIndex);
-      let isLeftNode = relevantIndex % 2 === 0;
+      const isLeftNode = relevantIndex % 2 === 0;
       if (isLeftNode) {
         proofElements.push(
           this.hashes.filter((e: IMerkleHashes) => e.level === level)[0].hashes[

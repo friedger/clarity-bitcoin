@@ -11,22 +11,29 @@ plan:
         - contract-publish:
             contract-name: clarity-bitcoin-helper
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 42540
+            cost: 42400
             path: contracts/clarity-bitcoin-helper.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: clarity-bitcoin
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 235840
+            cost: 236080
             path: contracts/clarity-bitcoin.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: helper
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 8320
+            path: contracts/helper.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: send-to-first-input
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 22370
-            path: contracts/examples/sent-to-first-input.clar
+            cost: 23340
+            path: contracts/examples/send-to-first-input.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:

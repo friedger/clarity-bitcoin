@@ -1,5 +1,4 @@
-import { Clarinet, Tx, Chain, Account, types, assertEquals } from "../deps.ts";
-import { hexToBytes } from "../utils.ts";
+import { Tx, Account, types } from "../deps.ts";
 
 export const Error = {
   ERR_TOO_SHORT: 6,

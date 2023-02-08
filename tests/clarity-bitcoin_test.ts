@@ -25,6 +25,43 @@ Clarinet.test({
   },
 });
 
+
+Clarinet.test({
+  name: "Ensure that merkle proof can be validated",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    let block = chain.mineBlock([
+      verifyMerkleProof(
+        // txid
+        hexToBytes(
+          "cb2e23bc96049cb71489f7e98817888a927b618e9d21700120c59b4f762f16f1"
+        ),
+        // reversed merkle root
+        hexToBytes(
+          "c9c02be3c9d6a3d97f048d19ffff34817ffa54e7eec51bac79bca5807f64375a"
+        ),
+        {
+          hashes: [
+            // sibling txid (in block 150000)
+            hexToBytes(
+              "f1162f764f9bc5200170219d8e617b928a881788e9f78914b79c0496bc232ecb"
+            ),
+            // 1 intermediate double-sha256 hashes
+            hexToBytes(
+              "7614716e165ae0cada0d4cd994bb195ca8010fd17c388825ca4c81843d14f9d8"
+            ),
+          ],
+          txIndex: 2, // this transaction is at index 6 in the block (starts from 0)
+          treeDepth: 2, // merkle tree depth (must be given because we can't infer leaf/non-leaf nodes)
+        },
+        deployer
+      ),
+    ]);
+
+    block.receipts[0].result.expectOk().expectBool(true);
+  },
+});
+
 Clarinet.test({
   name: "Ensure that merkle proof can be validated",
   async fn(chain: Chain, accounts: Map<string, Account>) {
@@ -39,7 +76,7 @@ Clarinet.test({
         ),
         {
           hashes: [
-            // sibling txid (in block 150000)
+            // reversed sibling txid (in block 150000)
             hexToBytes(
               "ae1e670bdbf8ab984f412e6102c369aeca2ced933a1de74712ccda5edaf4ee57"
             ),

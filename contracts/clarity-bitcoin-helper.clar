@@ -43,7 +43,7 @@
        (unwrap-panic (as-max-len? (concat (unwrap-panic (element-at BUFF_TO_BYTE (len outs))) (fold concat-out outs 0x)) u1024)))
 
 ;; Top level function to contruct the header from its parts
-(define-read-only (concat-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint}))
+(define-read-only (concat-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4)}))
   (concat (concat (concat (concat (concat (get version block) (get parent block)) (get merkle-root block)) (get timestamp block)) (get nbits block)) (get nonce block)))
 
 (define-read-only (concat-var (buffer (buff 256)))

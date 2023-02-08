@@ -345,7 +345,7 @@
                   { path: (+ (pow u2 (get tree-depth proof)) (get tx-index proof)), root-hash: merkle-root, proof-hashes: (get hashes proof), cur-hash: reversed-txid, tree-depth: (get tree-depth proof), verified: false})))))
 
 ;; Top-level verification code to determine whether or not a Bitcoin transaction was mined in a prior Bitcoin block.
-;; It takes the block header and block height, the transaction, and a merkle proof, and determines that:
+;; It takes the block height, the transaction, the block header and a merkle proof, and determines that:
 ;; * the block header corresponds to the block that was mined at the given Bitcoin height
 ;; * the transaction's merkle proof links it to the block header's merkle root.
 
@@ -365,16 +365,16 @@
 ;; Returns (ok false) if not.
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
 
-(define-read-only (was-tx-mined-header-buff (header (buff 80)) (height uint) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
+(define-read-only (was-tx-mined-compact (height uint) (tx (buff 1024)) (header (buff 80)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (let ((block (try! (parse-block-header header))))
-      (was-tx-mined height tx header (get merkle-root block) proof)))
+      (was-tx-mined-internal height tx header (get merkle-root block) proof)))
 
-(define-read-only (was-tx-mined-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-    (was-tx-mined (get height block) tx (contract-call? .clarity-bitcoin-helper concat-header block) (get merkle-root block) proof))
+(define-read-only (was-tx-mined (height uint) (tx (buff 1024)) (header { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4) }) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
+    (was-tx-mined-internal height tx (contract-call? .clarity-bitcoin-helper concat-header header) (get merkle-root header) proof))
 
 ;; Verify block header and merkle proof
 ;; This function must only called with the merkle root of the provided header
-(define-private (was-tx-mined (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
+(define-private (was-tx-mined-internal (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (if (verify-block-header header height)
-        (verify-merkle-proof (get-reversed-txid tx) merkle-root proof)
+        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)
         (err u1)))

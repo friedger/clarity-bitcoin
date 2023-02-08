@@ -7,8 +7,14 @@ These are the main functions that can be used to verify that a tx was mined in a
 
 The block header can be provided as an object with the header details or as a buffer.
 
-* was-tx-mined-header
-* was-tx-mined-header-buff
+* was-tx-mined-compact
+* was-tx-mined
+
+Both functions take the followin arguments in the same order:
+1. Bitcoin block height
+2. raw tx hex
+3. information about the Bitcoin block header either as hex or as a tuple
+4. Merkle proof
 
 ### Verification Functions for Block
 The verification happens in two steps:
