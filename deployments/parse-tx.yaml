@@ -1,0 +1,18 @@
+---
+id: 0
+name: Devnet deployment
+network: devnet
+stacks-node: "http://localhost:20443"
+bitcoin-node: "http://devnet:devnet@localhost:18443"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-call:
+            contract-id: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            method: parse-tx
+            parameters:
+              - 0x02000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0401740101ffffffff02fe4d062a010000001976a914ee9369fb719c0ba43ddf4d94638a970b84775f4788ac0000000000000000266a24aa21a9ed9a33f26bb3688d1519592fe119d983f77a3b37ff5351fb2935dc98754661c45d00000000
+            cost: 10000
+      epoch: "2.1"

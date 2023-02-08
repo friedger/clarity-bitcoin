@@ -2,8 +2,8 @@
 id: 0
 name: Devnet deployment
 network: devnet
-bitcoin-node: "http://devnet:devnet@localhost:18443"
 stacks-node: "http://localhost:20443"
+bitcoin-node: "http://devnet:devnet@localhost:18443"
 plan:
   batches:
     - id: 0
@@ -13,3 +13,4 @@ plan:
             recipient: mr1iPkD9N3RJZZxXRk7xF9d36gffa6exNC
             sats-amount: 10000000
             sats-per-byte: 10
+      epoch: "2.1"
