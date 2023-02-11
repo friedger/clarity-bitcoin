@@ -21,6 +21,11 @@ path = "contracts/clarity-bitcoin-helper.clar"
 clarity_version = 2
 epoch = 2.1
 
+[contracts.oracle]
+path = "contracts/oracle.clar"
+clarity_version = 2
+epoch = 2.1
+
 [contracts.helper]
 path = "contracts/helper.clar"
 clarity_version = 2
