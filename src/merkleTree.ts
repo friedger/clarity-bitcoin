@@ -1,3 +1,12 @@
+import { SHA256 } from "https://deno.land/x/sha256@v1.0.2/mod.ts";
+
+export const hexStringBtcHash =
+  (sha256: SHA256) => (valueToBeHashed: string) => {
+    // hash twice
+    const hash1 = sha256.init().update(valueToBeHashed, "hex").digest();
+    return sha256.init().update(hash1).digest("hex");
+  };
+
 export interface IMerkleHashes {
   level: number;
   hashes: string[];
@@ -21,7 +30,7 @@ export class MerkleTree {
     for (let i = 0; i < proof.length; i++) {
       if (index % 2 === 0) {
         hash = this.hashFunction(`${hash}${proof[i]}`);
-      } else {        
+      } else {
         hash = this.hashFunction(`${proof[i]}${hash}`);
       }
       index = Math.floor(index / 2);
@@ -36,6 +45,9 @@ export class MerkleTree {
     )[0].hashes[0];
   }
 
+  public getTreeDepth() {
+    return this.hashes[this.hashes.length - 1].level;
+  }
   public getProofElements(investigatedEntryIndex: number): string[] {
     let level = 0;
     const levels = this.hashes[this.hashes.length - 1].level;

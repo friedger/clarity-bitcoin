@@ -23,9 +23,16 @@ plan:
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
+            contract-name: stx-oracle
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 16910
+            path: contracts/stx-oracle.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
             contract-name: helper
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 8320
+            cost: 10500
             path: contracts/helper.clar
             anchor-block-only: true
             clarity-version: 2

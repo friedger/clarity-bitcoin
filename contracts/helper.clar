@@ -12,3 +12,9 @@
 
 (define-public (was-tx-mined-compact (height uint) (tx (buff 1024)) (header (buff 80)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (contract-call? .clarity-bitcoin was-tx-mined-compact height tx header proof))
+
+(define-public (get-rewards (height uint))
+    (ok (contract-call? .stx-oracle get-rewards height)))
+
+(define-public (get-sats-stx-price (height uint))
+    (ok (contract-call? .stx-oracle get-sats-stx-price height)))
