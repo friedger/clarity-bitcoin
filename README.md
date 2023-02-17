@@ -47,11 +47,11 @@ clarinet integrate
 ```
 clarinet deployments apply -p deployments/sent-btc.devnet-plan.yaml
 ```
-3. Copy the shown tx hex and paste it in data_txHex.json
-4. Wait for the transaction to be confirmed
-5. Open bitcoin explorer at localhost:8000 and search for the block with the transaction. 
-6. Inspect the block details as JSON and copy the block details to data_block.json
-7. Copy the transactions ids to data_txIds.json
+3. Copy the shown tx hex and paste it in data_txHex.ts
+4. Wait for the transaction to be confirmed.
+5. Open bitcoin explorer at localhost:8000 and search for the block with the transaction. There is only 1 block with 3 transactions, that is yours.
+6. Inspect the block details as JSON and copy the block details to data_block.ts
+7. Copy the transactions ids to data_txIds.ts
 8. Generate deployment plan for the stacks transaction by running 
 ```
 npx deno src/generatePlan.ts > deployments/send-to-first-input-plan.yaml
