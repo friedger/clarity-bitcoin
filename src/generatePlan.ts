@@ -12,7 +12,7 @@ export function generatePlan(txIds: string[], txHex: string) {
   const reversedTxIds = txIds.map(hexReverse);
   const sha256 = new SHA256();
   const txId = hexStringBtcHash(sha256)(txHex);
-  const txIndex = txIds.findIndex((t) => t === txId);
+  const txIndex = reversedTxIds.findIndex((t) => t === txId);
   const merkleTree = new MerkleTree(reversedTxIds, hexStringBtcHash(sha256));
   const proofElements = merkleTree.getProofElements(txIndex);
   const proof = `(tuple (tx-index u${txIndex}) (hashes (list 0x${proofElements.join(

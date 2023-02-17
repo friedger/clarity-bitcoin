@@ -9,8 +9,9 @@
 (define-read-only (sats-to-stx (sats uint))
     (/ sats SATS-PER-STX))
 
+;; for compressed public keys
 (define-read-only (p2pkh-to-principal (scriptSig (buff 256)))
-  (let ((pk (unwrap! (as-max-len? (unwrap! (slice? scriptSig u73 u106) none) u33) none)))
+  (let ((pk (unwrap! (as-max-len? (unwrap! (slice? scriptSig (- (len scriptSig) u33) (len scriptSig)) none) u33) none)))
     (some (unwrap! (principal-of? pk) none))))
 
 (define-public (send-to-first-input (height uint) (tx (buff 1024)) (header (buff 80)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))

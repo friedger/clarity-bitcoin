@@ -25,7 +25,7 @@ plan:
         - contract-publish:
             contract-name: stx-oracle
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 16910
+            cost: 16900
             path: contracts/stx-oracle.clar
             anchor-block-only: true
             clarity-version: 2
