@@ -27,6 +27,52 @@ Clarinet.test({
 
 
 Clarinet.test({
+  name: "Ensure that buffers are correctly reversed",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    let block = chain.mineBlock([
+      Tx.contractCall(
+        "clarity-bitcoin",
+        "reverse-buff32",
+        [
+          "0x74d350ca44c324f4643274b98801f9a023b2b8b72e8e895879fd9070a68f7f1f",
+        ],
+        deployer.address
+      ),
+      Tx.contractCall(
+        "clarity-bitcoin",
+        "reverse-buff32",
+        [
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+        ],
+        deployer.address
+      ),
+      Tx.contractCall(
+        "clarity-bitcoin",
+        "reverse-buff32",
+        [
+          "0x01",
+        ],
+        deployer.address
+      ),
+    ]);
+
+    block.receipts[0].result.expectBuff(
+      hexToBytes(
+        "1f7f8fa67090fd7958898e2eb7b8b223a0f90188b9743264f424c344ca50d374"
+      )
+    );
+    block.receipts[1].result.expectBuff(
+      hexToBytes(
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      )
+    );
+    // Runtime error
+    assertEquals(block.receipts[2], undefined)
+  },
+});
+
+Clarinet.test({
   name: "Ensure that merkle proof can be validated",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const deployer = accounts.get("deployer")!;
