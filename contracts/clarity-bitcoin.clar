@@ -82,25 +82,23 @@
 
 ;; Generate a permutation of a given 32-byte buffer, appending the element at target-index to hash-output.
 ;; The target-index decides which index in hash-input gets appended to hash-output.
-(define-read-only (inner-buff32-permutation (target-index uint) (state { hash-input: (buff 32), hash-output: (buff 32)}))
-    {
-        hash-input: (get hash-input state),
-        hash-output: (unwrap-panic
-                      (as-max-len? (concat
-                                    (get hash-output state)
-                                    (unwrap-panic
-                                        (as-max-len?
-                                            (unwrap-panic
-                                                (element-at (get hash-input state) target-index))
-                                         u32)))
-                       u32))})
+(define-read-only (inner-reverse (target-index uint) (hash-input (buff 32)))
+    (let ((temp-var (unwrap-panic (element-at? hash-input  target-index))))
+    (unwrap-panic 
+        (replace-at? 
+            (unwrap-panic 
+                (replace-at? 
+                    hash-input 
+                    target-index 
+                    (unwrap-panic (element-at? hash-input (- u31 target-index)))))
+            (- u31 target-index) 
+            temp-var))))
 
 ;; Reverse the byte order of a 32-byte buffer.  Returns the (buff 32).
 (define-read-only (reverse-buff32 (input (buff 32)))
-    (get hash-output
-         (fold inner-buff32-permutation
-             (list u31 u30 u29 u28 u27 u26 u25 u24 u23 u22 u21 u20 u19 u18 u17 u16 u15 u14 u13 u12 u11 u10 u9 u8 u7 u6 u5 u4 u3 u2 u1 u0)
-             { hash-input: input, hash-output: 0x})))
+    (fold inner-reverse
+        (list u31 u30 u29 u28 u27 u26 u25 u24 u23 u22 u21 u20 u19 u18 u17 u16)
+        input))
 
 ;; Reads a little-endian hash -- consume the next 32 bytes, and reverse them.
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 1024), index: uint } }) on success, and updates the index.
