@@ -124,7 +124,7 @@ Clarinet.test({
   name: "Ensure that bitcoin headers can be parsed",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const deployer = accounts.get("deployer")!;
-    const block = chain.mineBlock([
+    let block = chain.mineBlock([
       parseBlockHeader(
         hexToBytes(
           "000000203c437224480966081c2b14afac79e58207d996c8ac9d32000000000000000000847a4c2c77c8ecf0416ca07c2dc038414f14135017e18525f85cacdeedb54244e0d6b958df620218c626368a"
@@ -141,6 +141,24 @@ Clarinet.test({
       timestamp: 1488574176,
       nbits: 402809567,
       nonce: 2318804678,
+    });
+    block = chain.mineBlock([
+      parseBlockHeader(
+        hexToBytes(
+          "0020952c929316de1469df3abaff26835b0e73f45317f437b431e5e53a000000000000005c10dbda435580e08e54cd53f1504ee02a147a5d3e646a75131f9eff2e732492e838a56226d5461972717cf7"
+        ),
+        deployer
+      ),
+    ]);
+    expectHeaderObject(block, {
+      version: 747970560,
+      parent:
+        "000000000000003ae5e531b437f41753f4730e5b8326ffba3adf6914de169392",
+      merkleRoot:
+        "9224732eff9e1f13756a643e5d7a142ae04e50f153cd548ee0805543dadb105c",
+      timestamp: 1654995176,
+      nbits: 424072486,
+      nonce: 4152127858,
     });
   },
 });
