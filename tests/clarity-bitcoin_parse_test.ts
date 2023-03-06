@@ -117,6 +117,64 @@ Clarinet.test({
         },
       ],
     });
+    block = chain.mineBlock([
+      parseTx(
+        "0x02000000019f9069891e7c64089afc0fd54b58c2044a8f61dc23d0b70abd8a1a4eee3bb36e010000006a47304402204c882028c0eb0dde2297fe3b5873abb2c0868938d63141705bb89025b08130b302204d0cd527a0ef4260ca95babc977f9e97ba41f947a4d16dba8dee823dcaff790e0121030c82347d355523ff0a4ee5c45d8dea6423e3b41d5aecaf1372af7596002ea49afdffffff0838180000000000001976a91400eb31b8bd6003f946887129468a16570b68845288ac38180000000000001976a914124d44a6ddbee55099615560ba8d7d53fc02257a88ac38180000000000001976a91481ee7e1dcb06cd261a26e6309117568f0b5d9f4988ac38180000000000001976a914973945b46e1548d4da32d96e5e09c8aa02103ff888ac38180000000000001976a914dbd958d812af104b5501d242c5cda84b3549382888ac38180000000000001976a914e03a8ffbc18b05583f804b68de97ab683705ec7f88ac10270000000000001976a9140b650f021ff2ae2165594ae51c7b1fa88f719e5f88ac8cf11800000000001976a9144e1f6f57aa65cc6d394e227b665335cf07f897a888ac95f92400",
+        deployer
+      ),
+    ]);
+
+    expectTxObject(block, {
+      version: 2,
+      locktime: 2423189,
+      ins: [
+        {
+          outpoint: {
+            hash: "6eb33bee4e1a8abd0ab7d023dc618f4a04c2584bd50ffc9a08647c1e8969909f",
+            index: 1,
+          },
+          scriptSig:
+            "47304402204c882028c0eb0dde2297fe3b5873abb2c0868938d63141705bb89025b08130b302204d0cd527a0ef4260ca95babc977f9e97ba41f947a4d16dba8dee823dcaff790e0121030c82347d355523ff0a4ee5c45d8dea6423e3b41d5aecaf1372af7596002ea49a",
+          sequence: 4294967293,
+        },
+      ],
+      outs: [
+        {
+          scriptPubKey:
+            "76a91400eb31b8bd6003f946887129468a16570b68845288ac",
+          value: 6200,
+        },
+        {
+          scriptPubKey: "76a914124d44a6ddbee55099615560ba8d7d53fc02257a88ac",
+          value: 6200,
+        },
+        {
+          scriptPubKey: "76a91481ee7e1dcb06cd261a26e6309117568f0b5d9f4988ac",
+          value: 6200,
+        },
+        {
+          scriptPubKey: "76a914973945b46e1548d4da32d96e5e09c8aa02103ff888ac",
+          value: 6200,
+        },
+        {
+          scriptPubKey: "76a914dbd958d812af104b5501d242c5cda84b3549382888ac",
+          value: 6200,
+        },
+        {
+          scriptPubKey: "76a914e03a8ffbc18b05583f804b68de97ab683705ec7f88ac",
+          value: 6200,
+        },
+        {
+          scriptPubKey: "76a9140b650f021ff2ae2165594ae51c7b1fa88f719e5f88ac",
+          value: 10000,
+        },
+        {
+          scriptPubKey: "76a9144e1f6f57aa65cc6d394e227b665335cf07f897a888ac",
+          value: 1634700,
+        },
+      ],
+    });
+
   },
 });
 
