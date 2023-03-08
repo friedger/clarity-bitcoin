@@ -271,16 +271,18 @@
 ;; Returns true if so; false if not.
 (define-read-only (verify-block-header (headerbuff (buff 80)) (expected-block-height uint))
     (match (get-bc-h-hash expected-block-height)
-        bhh (is-eq bhh (reverse-buff32 (SHA-256d headerbuff)))
+        bhh (is-eq bhh (reverse-buff32 (sha256 (sha256 headerbuff))))
         false))
 
-(define-read-only (SHA-256d (data (buff 1024)))
-  (sha256 (sha256 data)))
+;; Get the txid of a transaction, but little-endian.
+;; This is the reverse of what you see on block explorers.
+(define-read-only (get-reversed-txid (tx (buff 1024)))
+    (sha256 (sha256 tx)))
 
 ;; Get the txid of a transaction.
 ;; This is what you see on block explorers.
 (define-read-only (get-txid (tx (buff 1024)))
-    (reverse-buff32 (SHA-256d tx)))
+    (reverse-buff32 (sha256 (sha256 tx))))
 
 ;; Determine if the ith bit in a uint is set to 1
 (define-read-only (is-bit-set (val uint) (bit uint))
@@ -305,7 +307,7 @@
 
                   (h1 (if is-left (unwrap-panic (element-at proof-hashes ctr)) cur-hash))
                   (h2 (if is-left cur-hash (unwrap-panic (element-at proof-hashes ctr))))
-                  (next-hash (SHA-256d (concat h1 h2)))
+                  (next-hash (sha256 (sha256 (concat h1 h2))))
                   (is-verified (and (is-eq (+ u1 ctr) (len proof-hashes)) (is-eq next-hash root-hash))))
              (merge state { cur-hash: next-hash, verified: is-verified})))))
 
@@ -360,5 +362,5 @@
 ;; This function must only called with the merkle root of the provided header
 (define-private (was-tx-mined-internal (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (if (verify-block-header header height)
-        (verify-merkle-proof (SHA-256d tx) (reverse-buff32 merkle-root) proof)
+        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)
         (err u1)))
