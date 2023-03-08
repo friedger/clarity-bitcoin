@@ -381,3 +381,40 @@ Clarinet.test({
     block.receipts[0].result.expectErr().expectUint(Error.ERR_TOO_SHORT);
   },
 });
+
+Clarinet.test({
+  name: "Ensure is-bit-set determines if the bit in a uint is set to 1",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const deployer = accounts.get("deployer")!;
+    let block = chain.mineBlock([
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(10),types.uint(0)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(10),types.uint(1)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(51),types.uint(2)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(51),types.uint(3)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(255),types.uint(7)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(0),types.uint(0)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(255),types.uint(0)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(255),types.uint(7)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(128),types.uint(7)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(240),types.uint(4)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(42),types.uint(2)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(255),types.uint(8)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(1),types.uint(1)],deployer.address),
+      Tx.contractCall("clarity-bitcoin","is-bit-set",[types.uint(1),types.uint(0)],deployer.address),
+    ]);
+    block.receipts[0].result.expectBool(false);
+    block.receipts[1].result.expectBool(true);
+    block.receipts[2].result.expectBool(false);
+    block.receipts[3].result.expectBool(false);
+    block.receipts[4].result.expectBool(true);
+    block.receipts[5].result.expectBool(false);
+    block.receipts[6].result.expectBool(true);
+    block.receipts[7].result.expectBool(true);
+    block.receipts[8].result.expectBool(true);
+    block.receipts[9].result.expectBool(true);
+    block.receipts[10].result.expectBool(false);
+    block.receipts[11].result.expectBool(false);
+    block.receipts[12].result.expectBool(false);
+    block.receipts[13].result.expectBool(true);
+  },
+});

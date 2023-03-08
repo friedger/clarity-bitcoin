@@ -6,21 +6,13 @@
 (define-constant ERR-BAD-HEADER u5)
 (define-constant ERR-PROOF-TOO-SHORT u6)
 
-;; Top-level function to read a slice of a given size from a given (buff 1024), starting at a given offset.
-;; Returns (ok (buff 1024)) on success, and it contains "buff[offset..(offset+size)]"
-;; Returns (err ERR-OUT-OF-BOUNDS) if the slice offset and/or size would copy a range of bytes outside the given buffer.
-(define-read-only (read-slice (data (buff 1024)) (offset uint) (size uint))
-    (ok
-        (unwrap! (slice? data offset (+ offset size)) (err ERR-OUT-OF-BOUNDS))))
-
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint16 (ctx { txbuff: (buff 1024), index: uint}))
     (let ((data (get txbuff ctx))
-          (base (get index ctx))
-          (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2) (err ERR-OUT-OF-BOUNDS)))))
-        (ok {uint16: ret,
+          (base (get index ctx)))
+        (ok {uint16: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2))),
              ctx: { txbuff: data, index: (+ u2 base)}})))
 
 ;; Reads the next four bytes from txbuff as a little-endian 32-bit integer, and updates the index.
@@ -28,9 +20,8 @@
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint32 (ctx { txbuff: (buff 1024), index: uint}))
     (let ((data (get txbuff ctx))
-          (base (get index ctx))
-          (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4) (err ERR-OUT-OF-BOUNDS)))))
-        (ok {uint32: ret,
+          (base (get index ctx)))
+        (ok {uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4))),
              ctx: { txbuff: data, index: (+ u4 base)}})))
 
 ;; Reads the next eight bytes from txbuff as a little-endian 64-bit integer, and updates the index.
@@ -38,9 +29,8 @@
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint64 (ctx { txbuff: (buff 1024), index: uint}))
     (let ((data (get txbuff ctx))
-          (base (get index ctx))
-          (ret (buff-to-uint-le (unwrap! (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8) (err ERR-OUT-OF-BOUNDS)))))
-        (ok {uint64: ret,
+          (base (get index ctx)))
+        (ok {uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8))),
              ctx: { txbuff: data, index: (+ u8 base)}})))
 
 ;; Reads the next varint from txbuff, and updates the index.
@@ -74,16 +64,16 @@
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-varslice (old-ctx { txbuff: (buff 1024), index: uint}))
     (let ((parsed (try! (read-varint old-ctx)))
-          (slice-len (get varint parsed))
           (ctx (get ctx parsed))
-          (slice (try! (read-slice (get txbuff ctx) (get index ctx) slice-len))))
-     (ok {varslice: slice,
-          ctx: { txbuff: (get txbuff ctx), index: (+ (len slice) (get index ctx))}})))
+          (slice-start (get index ctx))
+          (target-index (+ slice-start (get varint parsed)))
+          (txbuff (get txbuff ctx)))
+     (ok {varslice: (unwrap! (slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS)),
+          ctx: { txbuff: txbuff, index: target-index}})))
 
 ;; Generate a permutation of a given 32-byte buffer, appending the element at target-index to hash-output.
 ;; The target-index decides which index in hash-input gets appended to hash-output.
 (define-read-only (inner-reverse (target-index uint) (hash-input (buff 32)))
-    (let ((temp-var (unwrap-panic (element-at? hash-input  target-index))))
     (unwrap-panic 
         (replace-at? 
             (unwrap-panic 
@@ -92,7 +82,7 @@
                     target-index 
                     (unwrap-panic (element-at? hash-input (- u31 target-index)))))
             (- u31 target-index) 
-            temp-var))))
+            (unwrap-panic (element-at? hash-input  target-index)))))
 
 ;; Reverse the byte order of a 32-byte buffer.  Returns the (buff 32).
 (define-read-only (reverse-buff32 (input (buff 32)))
@@ -104,12 +94,15 @@
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 1024), index: uint } }) on success, and updates the index.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-hashslice (old-ctx { txbuff: (buff 1024), index: uint}))
-    (let ((hash-le (unwrap-panic
-                      (as-max-len? (try!
-                                      (read-slice (get txbuff old-ctx) (get index old-ctx) u32))
+    (let ((slice-start (get index old-ctx))
+          (target-index (+ u32 slice-start))
+          (txbuff (get txbuff old-ctx))
+          (hash-le (unwrap-panic
+                      (as-max-len? (unwrap!
+                                      (slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS))
                        u32))))
      (ok {hashslice: (reverse-buff32 hash-le),
-          ctx: { txbuff: (get txbuff old-ctx), index: (+ u32 (get index old-ctx))}})))
+          ctx: { txbuff: txbuff, index: target-index}})))
 
 ;; Inner fold method to read the next tx input from txbuff.
 ;; The index in ctx will be updated to point to the next tx input if all goes well (or to the start of the outputs)
@@ -122,8 +115,7 @@
                                                         remaining: uint,
                                                         txins: (list 8 {outpoint: {
                                                                                    hash: (buff 32),
-                                                                                   index: uint}
-                                                                        ,
+                                                                                   index: uint},
                                                                         scriptSig: (buff 256),      ;; just big enough to hold a 2-of-3 multisig script
                                                                         sequence: uint})}
                                               uint)))
@@ -144,8 +136,7 @@
                                   (append (get txins state)
                                       {   outpoint: {
                                                      hash: (get hashslice parsed-hash),
-                                                     index: (get uint32 parsed-index)}
-                                          ,
+                                                     index: (get uint32 parsed-index) },
                                           scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ERR-VARSLICE-TOO-LONG)),
                                           sequence: (get uint32 parsed-sequence)})
                                u8)
@@ -165,7 +156,7 @@
           (new-ctx (get ctx parsed-num-txins)))
      (if (> num-txins u8)
          (err ERR-TOO-MANY-TXINS)
-         (fold read-next-txin (list true true true true true true true true) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
+         (fold read-next-txin (unwrap-panic (slice? (list true true true true true true true true) u0 num-txins)) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
 
 ;; Read the next transaction output, and update the index in ctx to point to the next output.
 ;; Returns (ok { ... }) on success
@@ -209,7 +200,7 @@
           (new-ctx (get ctx parsed-num-txouts)))
      (if (> num-txouts u8)
          (err ERR-TOO-MANY-TXOUTS)
-         (fold read-next-txout (list true true true true true true true true) (ok { ctx: new-ctx, remaining: num-txouts, txouts: (list)})))))
+         (fold read-next-txout (unwrap-panic (slice? (list true true true true true true true true) u0 num-txouts)) (ok { ctx: new-ctx, remaining: num-txouts, txouts: (list)})))))
 
 ;; Helper functions for smart contract that want to use information of a Bitcoin transaction
 ;;
@@ -258,17 +249,14 @@
 ;;      nbits: uint,                    ;; compact block difficulty representation
 ;;      nonce: uint                     ;; PoW solution
 ;; })
-;; Returns (err ERR-BAD-HEADER) if the header buffer isn't actually 80 bytes long.
 (define-read-only (parse-block-header (headerbuff (buff 80)))
-    (let ((ctx { txbuff: (unwrap! (as-max-len? headerbuff u1024) (err ERR-BAD-HEADER)), index: u0})
-
-        ;; none of these should fail, since they're all fixed-length fields whose lengths sum to 80
-          (parsed-version (unwrap-panic (read-uint32 ctx)))
-          (parsed-parent-hash (unwrap-panic (read-hashslice (get ctx parsed-version))))
-          (parsed-merkle-root (unwrap-panic (read-hashslice (get ctx parsed-parent-hash))))
-          (parsed-timestamp (unwrap-panic (read-uint32 (get ctx parsed-merkle-root))))
-          (parsed-nbits (unwrap-panic (read-uint32 (get ctx parsed-timestamp))))
-          (parsed-nonce (unwrap-panic (read-uint32 (get ctx parsed-nbits)))))
+    (let ((ctx { txbuff: headerbuff, index: u0})
+          (parsed-version (try! (read-uint32 ctx)))
+          (parsed-parent-hash (try! (read-hashslice (get ctx parsed-version))))
+          (parsed-merkle-root (try! (read-hashslice (get ctx parsed-parent-hash))))
+          (parsed-timestamp (try! (read-uint32 (get ctx parsed-merkle-root))))
+          (parsed-nbits (try! (read-uint32 (get ctx parsed-timestamp))))
+          (parsed-nonce (try! (read-uint32 (get ctx parsed-nbits)))))
      (ok {version: (get uint32 parsed-version),
           parent: (get hashslice parsed-parent-hash),
           merkle-root: (get hashslice parsed-merkle-root),
@@ -294,11 +282,11 @@
 ;; Get the txid of a transaction.
 ;; This is what you see on block explorers.
 (define-read-only (get-txid (tx (buff 1024)))
-    (reverse-buff32 (get-reversed-txid tx)))
+    (reverse-buff32 (sha256 (sha256 tx))))
 
 ;; Determine if the ith bit in a uint is set to 1
 (define-read-only (is-bit-set (val uint) (bit uint))
-    (is-eq (mod (/ val (pow u2 bit)) u2) u1))
+  (> (bit-and val (bit-shift-left u1 bit)) u0))
 
 ;; Verify the next step of a Merkle proof.
 ;; This hashes cur-hash against the ctr-th hash in proof-hashes, and uses that as the next cur-hash.
@@ -364,7 +352,7 @@
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
 
 (define-read-only (was-tx-mined-compact (height uint) (tx (buff 1024)) (header (buff 80)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-    (let ((block (try! (parse-block-header header))))
+    (let ((block (unwrap! (parse-block-header header) (err ERR-BAD-HEADER))))
       (was-tx-mined-internal height tx header (get merkle-root block) proof)))
 
 (define-read-only (was-tx-mined (height uint) (tx (buff 1024)) (header { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4) }) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
