@@ -1,52 +1,52 @@
 ---
 id: 0
-name: Devnet deployment
-network: devnet
-stacks-node: "http://localhost:20443"
-bitcoin-node: "http://devnet:devnet@localhost:18443"
+name: Mainnet deployment
+network: mainnet
+stacks-node: "https://api.mainnet.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
 plan:
   batches:
     - id: 0
       transactions:
         - contract-publish:
             contract-name: clarity-bitcoin-helper
-            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 42400
+            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
+            cost: 113830
             path: contracts/clarity-bitcoin-helper.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: clarity-bitcoin
-            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 226100
+            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
+            cost: 114373
             path: contracts/clarity-bitcoin.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: stx-oracle
-            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 16900
+            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
+            cost: 113755
             path: contracts/stx-oracle.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: helper
-            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 10500
+            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
+            cost: 113736
             path: contracts/helper.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: send-to-first-input
-            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 23950
+            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
+            cost: 113774
             path: contracts/examples/send-to-first-input.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
             contract-name: stx-account
-            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 790
+            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
+            cost: 113712
             path: contracts/helper-stx-account.clar
             anchor-block-only: true
             clarity-version: 2

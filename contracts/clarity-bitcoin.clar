@@ -74,14 +74,14 @@
 ;; Generate a permutation of a given 32-byte buffer, appending the element at target-index to hash-output.
 ;; The target-index decides which index in hash-input gets appended to hash-output.
 (define-read-only (inner-reverse (target-index uint) (hash-input (buff 32)))
-    (unwrap-panic 
-        (replace-at? 
-            (unwrap-panic 
-                (replace-at? 
-                    hash-input 
-                    target-index 
+    (unwrap-panic
+        (replace-at?
+            (unwrap-panic
+                (replace-at?
+                    hash-input
+                    target-index
                     (unwrap-panic (element-at? hash-input (- u31 target-index)))))
-            (- u31 target-index) 
+            (- u31 target-index)
             (unwrap-panic (element-at? hash-input  target-index)))))
 
 ;; Reverse the byte order of a 32-byte buffer.  Returns the (buff 32).
@@ -358,8 +358,9 @@
 (define-read-only (was-tx-mined (height uint) (tx (buff 1024)) (header { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4) }) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (was-tx-mined-internal height tx (contract-call? .clarity-bitcoin-helper concat-header header) (get merkle-root header) proof))
 
-;; Verify block header and merkle proof
-;; This function must only called with the merkle root of the provided header
+;; Verify block header and merkle proof.
+;; This function must only be called with the merkle root of the provided header.
+;; Use was-tx-mined-compact with header as a buffer or was-tx-mined with header as a tuple.
 (define-private (was-tx-mined-internal (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (if (verify-block-header header height)
         (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)

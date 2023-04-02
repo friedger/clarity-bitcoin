@@ -1,18 +1,27 @@
 import { SHA256 } from "https://deno.land/x/sha256@v1.0.2/mod.ts";
 import { hexReverse } from "../tests/utils.ts";
-import { hexStringBtcHash, MerkleTree } from "./merkleTree.ts";
-import { block } from "./data_block.ts";
-import { txIds } from "./data_txIds.ts";
-import { txHex } from "./data_txHex.ts";
+import { hexStringBtcHash, MerkleTree } from "./utils-merkleTree.ts";
 
+const bitcoinExplorerUrl = "http://devnet:devnet@localhost:8001";
 
-generatePlan(txIds, txHex);
+const txId = Deno.args[0];
+generatePlan(txId);
 
-export function generatePlan(txIds: string[], txHex: string) {
-  const reversedTxIds = txIds.map(hexReverse);
+export async function generatePlan(txId: string) {
+  const txDetails = await fetch(`${bitcoinExplorerUrl}/api/tx/${txId}`).then(
+    (r) => r.json()
+  );
+  const txHex = txDetails.hex;
+
+  const blockhash = txDetails.blockhash;
+  const block = await fetch(
+    `${bitcoinExplorerUrl}/api/block/${blockhash}`
+  ).then((r) => r.json());
+  const txIds = block.tx as string[];
   const sha256 = new SHA256();
-  const txId = hexStringBtcHash(sha256)(txHex);
-  const txIndex = reversedTxIds.findIndex((t) => t === txId);
+
+  const txIndex = txIds.findIndex((t) => t === txId);
+  const reversedTxIds = txIds.map(hexReverse);
   const merkleTree = new MerkleTree(reversedTxIds, hexStringBtcHash(sha256));
   const proofElements = merkleTree.getProofElements(txIndex);
   const proof = `(tuple (tx-index u${txIndex}) (hashes (list 0x${proofElements.join(
