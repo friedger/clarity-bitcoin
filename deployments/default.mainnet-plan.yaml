@@ -16,7 +16,7 @@ plan:
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
-            contract-name: clarity-bitcoin
+            contract-name: clarity-bitcoin-lib-v2
             expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
             cost: 114373
             path: contracts/clarity-bitcoin.clar
@@ -27,20 +27,6 @@ plan:
             expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
             cost: 113755
             path: contracts/stx-oracle.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: helper
-            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
-            cost: 113736
-            path: contracts/helper.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: send-to-first-input
-            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
-            cost: 113774
-            path: contracts/examples/send-to-first-input.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
