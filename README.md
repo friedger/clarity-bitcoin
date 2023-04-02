@@ -1,86 +1,63 @@
-# clarity-bitcoin
+# Introduction
 
-Clarity library for parsing Bitcoin transactions and block headers, and
-verifying that Bitcoin transactions were sent on the Bitcoin chain.
+## Clarity Functions
 
-This code is lightly tested and should not be used in production.  It is meant
-for educational purposes.  IT HAS NOT BEEN AUDITED.
+The main function is about verifying that a transaction was mined in a certain bitcoin block. The verification happens in two steps:
+1. compare the provided block header information with the actual chain
+2. compare the merkle root from the provided merkle proof with the merkle root of the provided block header
 
-## Top-level methods
+### Was Tx Mined?
+These are the main functions that can be used to verify that a tx was mined in a given bitcoin block.
 
-### Parse a Bitcoin block header
+The block header can be provided as an object with the header details or as a buffer.
 
+* was-tx-mined-compact (header as a buffer)
+* was-tx-mined (header as an object)
+
+Both functions take the following arguments in the same order:
+1. Bitcoin block height
+2. Raw tx hex
+3. Bitcoin block header either as hex or as a tuple
+4. Merkle proof
+
+### Verification Functions for Transactions in Bitcoin Block
+
+The verification happens in two steps:
+1. verify that the hash of the given header is equal to the header hash of the given block height
+2. verify that the given merkle proof for the given transaction id results in the merkle root contained in the header
+   
+* verify-block-header
+* verify-merkle-proof
+
+### Helper Function for Tx Verification
+Once the tx id was confirmed to be mined in the given block, the inputs and outputs of the tx can be used to trigger certain actions in a smart contract. To verify e.g. that an input is indeed an input of the verified tx id, the hash of a transaction buffer must match the tx id. Then the inputs and outputs of the transaction can be used either 
+* by parsing the transaction buffer into an object with inputs, outputs, timelock, etc. or
+* by concatinating the transaction object to a buffer with the correct hash.
+
+## Examples
+
+### Send to First Input
+This example sends an amount of STX to the sender of a bitcoin transaction using p2pkh addresses
+
+1. Deploy all contracts  
 ```
-;; Parse a Bitcoin block header.
-;; Returns a tuple structured as folowed on success:
-;; (ok {
-;;      version: uint,                  ;; block version,
-;;      parent: (buff 32),              ;; parent block hash,
-;;      merkle-root: (buff 32),         ;; merkle root for all this block's transactions
-;;      timestamp: uint,                ;; UNIX epoch timestamp of this block, in seconds
-;;      nbits: uint,                    ;; compact block difficulty representation
-;;      nonce: uint                     ;; PoW solution
-;; })
-;; Returns (err ERR-BAD-HEADER) if the header buffer isn't actually 80 bytes long.
-(define-read-only (parse-block-header (headerbuff (buff 80)))
+clarinet integrate
 ```
-
-### Parse a Bitcoin transaction
-
+2. Call deployment plan to send 0.1 BTC
 ```
-;; Parse a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
-;; Returns a tuple structured as follows on success:
-;; (ok {
-;;      version: uint,                      ;; tx version
-;;      ins: (list 8
-;;          {
-;;              outpoint: {                 ;; pointer to the utxo this input consumes
-;;                  hash: (buff 32),
-;;                  index: uint
-;;              },
-;;              scriptSig: (buff 256),      ;; spending condition script
-;;              sequence: uint
-;;          }),
-;;      outs: (list 8
-;;          {
-;;              value: uint,                ;; satoshis sent
-;;              scriptPubKey: (buff 128)    ;; parse this to get an address
-;;          }),
-;;      locktime: uint
-;; })
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
-;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
-(define-read-only (parse-tx (tx (buff 1024)))
+clarinet deployments apply -p deployments/sent-btc.devnet-plan.yaml
 ```
-
-### Determine whether or not a Bitcoin transaction was sent
-
+3. Copy the shown tx hex and paste it in data_txHex.ts
+4. Wait for the transaction to be confirmed.
+5. Open bitcoin explorer at localhost:8000 and search for the block with the transaction. There is only 1 block with 3 transactions, that is yours.
+6. Inspect the block details as JSON and copy the block details to data_block.ts
+7. Copy the transactions ids to data_txIds.ts
+8. Generate deployment plan for the stacks transaction by running 
 ```
-;; Top-level verification code to determine whether or not a Bitcoin transaction was mined in a prior Bitcoin block.
-;; It takes the block header and block height, the transaction, and a merkle proof, and determines that:
-;; * the block header corresponds to the block that was mined at the given Bitcoin height
-;; * the transaction's merkle proof links it to the block header's merkle root.
-;; The proof is a list of sibling merkle tree nodes that allow us to calculate the parent node from two children nodes in each merkle tree level,
-;; the depth of the block's merkle tree, and the index in the block in which the given transaction can be found (starting from 0).
-;; The first element in hashes must be the given transaction's sibling transaction's ID.  This and the given transaction's txid are hashed to 
-;; calculate the parent hash in the merkle tree, which is then hashed with the *next* hash in the proof, and so on and so forth, until the final
-;; hash can be compared against the block header's merkle root field.  The tx-index tells us in which order to hash each pair of siblings.
-;; Note that the proof hashes -- including the sibling txid -- must be _big-endian_ hashes, because this is how Bitcoin generates them.
-;; This is the reverse of what you'd see in a block explorer!
-;; Returns (ok true) if the proof checks out.
-;; Returns (ok false) if not.
-;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
-(define-read-only (was-tx-mined? (block { header: (buff 80), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
+npx deno src/generatePlan.ts > deployments/send-to-first-input-plan.yaml
+``` 
+9. Call deployment plan to send STX to the bitcoin sender
 ```
-
-## Testing
-
-Install `clarity-cli` in your `$PATH` and do the following:
-
+clarinet deployments apply -p deployments/sent-to-first-input-plan.yaml
 ```
-$ cd ./tests && ./run-tests.sh
-```
-
-Unit tests with examples are in `tests/test-clarity-bitcoin.clar`.
+10. Check the stacks explorer at localhost: 8001 about the result

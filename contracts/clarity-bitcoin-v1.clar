@@ -7,7 +7,7 @@
 (define-constant ERR-PROOF-TOO-SHORT u6)
 
 ;; lookup table for converting 1-byte buffers to uints via index-of
-(define-constant BUFF_TO_BYTE (list 
+(define-constant BUFF_TO_BYTE (list
    0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f
    0x10 0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f
    0x20 0x21 0x22 0x23 0x24 0x25 0x26 0x27 0x28 0x29 0x2a 0x2b 0x2c 0x2d 0x2e 0x2f
@@ -303,7 +303,7 @@
         (byte-6 (buff-to-u8 (unwrap! (element-at data (+ u5 base)) (err ERR-OUT-OF-BOUNDS))))
         (byte-7 (buff-to-u8 (unwrap! (element-at data (+ u6 base)) (err ERR-OUT-OF-BOUNDS))))
         (byte-8 (buff-to-u8 (unwrap! (element-at data (+ u7 base)) (err ERR-OUT-OF-BOUNDS))))
-        (ret (+ 
+        (ret (+
            (* byte-8 u72057594037927936)
            (* byte-7 u281474976710656)
            (* byte-6 u1099511627776)
@@ -431,7 +431,7 @@
     }))
 )
 
-;; Inner fold method to read the next tx input from txbuff. 
+;; Inner fold method to read the next tx input from txbuff.
 ;; The index in ctx will be updated to point to the next tx input if all goes well (or to the start of the outputs)
 ;; Returns (ok { ... }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
@@ -536,7 +536,7 @@
                                     value: (get uint64 parsed-value),
                                     scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))
                                 })
-                        u8) 
+                        u8)
                         (err ERR-TOO-MANY-TXOUTS))
                 }))
                 (ok state)
@@ -636,14 +636,16 @@
     }))
 )
 
+(define-read-only (get-bc-h-hash (bh uint))
+  (get-block-info? burnchain-header-hash bh))
+
 ;; Verify that a block header hashes to a burnchain header hash at a given height.
 ;; Returns true if so; false if not.
 (define-read-only (verify-block-header (headerbuff (buff 80)) (expected-block-height uint))
-    (match (get-block-info? burnchain-header-hash expected-block-height)
+    (match (get-bc-h-hash expected-block-height)
         bhh (is-eq bhh (reverse-buff32 (sha256 (sha256 headerbuff))))
         false
-    )
-)
+    ))
 
 ;; Get the txid of a transaction, but big-endian.
 ;; This is the reverse of what you see on block explorers.
@@ -708,7 +710,7 @@
 ;; * The list of hashes that link the txid to the merkle root,
 ;; * The depth of the block's merkle tree (required because Bitcoin does not identify merkle tree nodes as being leaves or intermediates).
 ;; The _reversed_ txid is required because that's the order (big-endian) processes them in.
-;; The tx-index is required because it tells us the left/right traversals we'd make if we were walking down the tree from root to transaction, 
+;; The tx-index is required because it tells us the left/right traversals we'd make if we were walking down the tree from root to transaction,
 ;; and is thus used to deduce the order in which to hash the intermediate hashes with one another to link the txid to the merkle root.
 ;; Returns (ok true) if the proof is valid.
 ;; Returns (ok false) if the proof is invalid.
@@ -731,7 +733,7 @@
 ;; * the transaction's merkle proof links it to the block header's merkle root.
 ;; The proof is a list of sibling merkle tree nodes that allow us to calculate the parent node from two children nodes in each merkle tree level,
 ;; the depth of the block's merkle tree, and the index in the block in which the given transaction can be found (starting from 0).
-;; The first element in hashes must be the given transaction's sibling transaction's ID.  This and the given transaction's txid are hashed to 
+;; The first element in hashes must be the given transaction's sibling transaction's ID.  This and the given transaction's txid are hashed to
 ;; calculate the parent hash in the merkle tree, which is then hashed with the *next* hash in the proof, and so on and so forth, until the final
 ;; hash can be compared against the block header's merkle root field.  The tx-index tells us in which order to hash each pair of siblings.
 ;; Note that the proof hashes -- including the sibling txid -- must be _big-endian_ hashes, because this is how Bitcoin generates them.
@@ -739,9 +741,45 @@
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
-(define-read-only (was-tx-mined? (block { header: (buff 80), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
+(define-read-only (was-tx-mined-compact (block { header: (buff 80), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
     (if (verify-block-header (get header block) (get height block))
-        (verify-merkle-proof (get-reversed-txid tx) (get merkle-root (try! (parse-block-header (get header block)))) proof)
+        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 (get merkle-root (try! (parse-block-header (get header block))))) proof)
         (ok false)
+    )
+)
+
+(define-read-only (concat-header (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }))
+  (concat (concat (concat (concat (concat (get version block) (get parent block)) (get merkle-root block)) (get timestamp block)) (get nbits block)) (get nonce block))
+)
+
+(define-read-only (concat-var (buffer (buff 256)))
+  (concat (unwrap-panic (element-at BUFF_TO_BYTE (len buffer))) buffer))
+
+(define-read-only (concat-in (in {outpoint: {hash: (buff 32), index: (buff 4)}, scriptSig: (buff 256), sequence: (buff 4)}) (result (buff 1024)))
+  (unwrap-panic (as-max-len? (concat (concat (concat (concat result (get hash (get outpoint in))) (get index (get outpoint in))) (concat-var (get scriptSig in))) (get sequence in)) u1024 )))
+
+(define-read-only (concat-ins (ins (list 8
+        {outpoint: {hash: (buff 32), index: (buff 4)}, scriptSig: (buff 256), sequence: (buff 4)})))
+       (unwrap-panic (as-max-len? (concat (unwrap-panic (element-at BUFF_TO_BYTE (len ins))) (fold concat-in ins 0x)) u1024)))
+
+(define-read-only (concat-out (out {value: (buff 8), scriptPubKey: (buff 128)}) (result (buff 1024)))
+  (unwrap-panic (as-max-len? (concat (concat result (get value out)) (concat-var (get scriptPubKey out))) u1024)))
+
+(define-read-only (concat-outs (outs (list 8
+        {value: (buff 8), scriptPubKey: (buff 128)})))
+       (unwrap-panic (as-max-len? (concat (unwrap-panic (element-at BUFF_TO_BYTE (len outs))) (fold concat-out outs 0x)) u1024)))
+
+(define-read-only (concat-tx (tx {version: (buff 4),
+      ins: (list 8
+        {outpoint: {hash: (buff 32), index: (buff 4)}, scriptSig: (buff 256), sequence: (buff 4)}),
+      outs: (list 8
+        {value: (buff 8), scriptPubKey: (buff 128)}),
+      locktime: (buff 4)}))
+ (unwrap-panic (as-max-len?  (concat (concat (concat (get version tx) (concat-ins (get ins tx))) (concat-outs (get outs tx))) (get locktime tx)) u1024)))
+
+(define-read-only (was-tx-mined (block { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4), height: uint }) (tx (buff 1024)) (proof { tx-index: uint, hashes: (list 12 (buff 32)), tree-depth: uint }))
+    (if (verify-block-header (concat-header block) (get height block))
+        (verify-merkle-proof (get-reversed-txid tx) (get merkle-root block) proof)
+        (err u1)
     )
 )

@@ -1,0 +1,53 @@
+---
+id: 0
+name: Devnet deployment
+network: devnet
+stacks-node: "http://localhost:20443"
+bitcoin-node: "http://devnet:devnet@localhost:18443"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: clarity-bitcoin-helper
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 42400
+            path: contracts/clarity-bitcoin-helper.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: clarity-bitcoin
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 236080
+            path: contracts/clarity-bitcoin.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: stx-oracle
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 16900
+            path: contracts/stx-oracle.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: helper
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 10500
+            path: contracts/helper.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: send-to-first-input
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 23340
+            path: contracts/examples/send-to-first-input.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: stx-account
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 790
+            path: contracts/helper-stx-account.clar
+            anchor-block-only: true
+            clarity-version: 2
+      epoch: "2.1"
