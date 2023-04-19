@@ -1,3 +1,8 @@
+;; @contract stateless contract to verify bitcoin transaction
+;; @version 3
+
+;; version 3 fixes tx-was-mined
+
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
 (define-constant ERR-TOO-MANY-TXINS u2)

@@ -9,31 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: clarity-bitcoin-helper
-            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
-            cost: 113830
-            path: contracts/clarity-bitcoin-helper.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: clarity-bitcoin-lib-v2
+            contract-name: clarity-bitcoin-lib-v3
             expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
             cost: 114373
             path: contracts/clarity-bitcoin.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: stx-oracle
-            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
-            cost: 113755
-            path: contracts/stx-oracle.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: stx-account
-            expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
-            cost: 113712
-            path: contracts/helper-stx-account.clar
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.1"
