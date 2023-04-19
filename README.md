@@ -20,6 +20,14 @@ Both functions take the following arguments in the same order:
 3. Bitcoin block header either as hex or as a tuple
 4. Merkle proof
 
+The header object has the following properties using the reverse hex of the shown values in the bitcoin explorer:
+- version: (buff 4)
+- parent: (buff 32)
+- merkle-root: (buff 32)
+- timestamp: (buff 4)
+- nbits: (buff 4)
+- nonce: (buff 4) 
+  
 ### Verification Functions for Transactions in Bitcoin Block
 
 The verification happens in two steps:
@@ -36,8 +44,9 @@ Once the tx id was confirmed to be mined in the given block, the inputs and outp
 
 ## Examples
 
+As requirements, `clarinet` and `deno` needs to be installed.
 ### Send to First Input
-This example sends an amount of STX to the sender of a bitcoin transaction using p2pkh addresses
+This example sends an amount of STX to the sender of a bitcoin transaction using p2pkh addresses. It exists in two version, one using the header object, the other the header buffer (compact).
 
 1. Deploy all contracts 
 ```
@@ -45,17 +54,17 @@ clarinet integrate
 ```
 2. Call deployment plan to send 0.1 BTC
 ```
-clarinet deployments apply -p deployments/sent-btc.devnet-plan.yaml --no-dashboard
+clarinet deployments apply -p deployments/send-btc.devnet-plan.yaml --no-dashboard
 ```
 3. Confirm to continue
-4. Copy the tx id from the Transaction
+4. Copy the tx hex from the Transaction
 5. Press N to mine the block in the clarinet dashboard
-6.  Generate deployment plan for the stacks transaction by running the following command with the copied tx id (replace `883d5ac6a1d4b9493ec692469c72df7c3cf5f9ec37689cd5db634a2127364308`)
+6. Generate deployment plan for the stacks transaction by running the following command with the copied tx hex (replace `01..txhex`). (The generation script takes care of reversing the properties of the block header.)
 ```
-npx deno run --allow-net ./src/generatePlan.ts 883d5ac6a1d4b9493ec692469c72df7c3cf5f9ec37689cd5db634a2127364308 > deployments/send-to-first-input-plan.yaml
+deno run --allow-net ./src/generatePlan.ts 01..txhex > deployments/send-to-first-input-plan.yaml
 ```
 7. Call deployment plan to send STX to the bitcoin sender
 ```
 clarinet deployments apply -p deployments/sent-to-first-input-plan.yaml
 ```
-8.  Check the stacks explorer at localhost: 8001 about the result
+8.  Check the stacks explorer at localhost: 8001 about the result for the transactions of the two versions

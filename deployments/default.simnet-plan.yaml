@@ -73,6 +73,11 @@ plan:
             path: contracts/examples/send-to-first-input.clar
             clarity-version: 2
         - emulated-contract-publish:
+            contract-name: send-to-first-input-compact
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/examples/send-to-first-input-compact.clar
+            clarity-version: 2
+        - emulated-contract-publish:
             contract-name: stx-account
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/helper-stx-account.clar

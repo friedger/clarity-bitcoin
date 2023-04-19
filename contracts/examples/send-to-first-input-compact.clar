@@ -14,13 +14,11 @@
   (let ((pk (unwrap! (as-max-len? (unwrap! (slice? scriptSig (- (len scriptSig) u33) (len scriptSig)) none) u33) none)))
     (some (unwrap! (principal-of? pk) none))))
 
-(define-public (send-to-first-input (height uint) (tx (buff 1024))
-                        (header { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4) })
-                        (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
+(define-public (send-to-first-input (height uint) (tx (buff 1024)) (header (buff 80)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (let (
         ;; extract parts of Bitcoin transaction
           (tx-obj (try! (contract-call? .clarity-bitcoin parse-tx tx)))
-          (was-mined (try! (contract-call? .clarity-bitcoin was-tx-mined height tx header proof)))
+          (was-mined (try! (contract-call? .clarity-bitcoin was-tx-mined-compact height tx header proof)))
           (first-output (unwrap! (element-at (get outs tx-obj) u0) err-out-not-found))
           (first-input (unwrap! (element-at (get ins tx-obj) u0) err-in-not-found)))
         ;; TODO check whether the tx-sender is the same as the first output
