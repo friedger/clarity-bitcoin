@@ -365,3 +365,5 @@
     (if (verify-block-header header height)
         (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)
         (err u1)))
+
+(define-public ())
