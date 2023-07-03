@@ -1,7 +1,7 @@
 import { Tx, Account, types } from "../deps.ts";
 
 export const Error = {
-  ERR_TOO_SHORT: 6,
+  ERR_PROOF_TOO_SHORT: 8,
 };
 
 export function parseTx(tx: string, deployer: Account) {

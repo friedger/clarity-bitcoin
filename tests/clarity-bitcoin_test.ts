@@ -378,7 +378,7 @@ Clarinet.test({
       ),
     ]);
 
-    block.receipts[0].result.expectErr().expectUint(Error.ERR_TOO_SHORT);
+    block.receipts[0].result.expectErr().expectUint(Error.ERR_PROOF_TOO_SHORT);
   },
 });
 

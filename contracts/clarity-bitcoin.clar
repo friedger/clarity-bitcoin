@@ -1,7 +1,7 @@
 ;; @contract stateless contract to verify bitcoin transaction
-;; @version 3
+;; @version 4
 
-;; version 3 fixes tx-was-mined
+;; version 4 adds support for segwit transactions
 
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
@@ -9,10 +9,12 @@
 (define-constant ERR-TOO-MANY-TXOUTS u3)
 (define-constant ERR-VARSLICE-TOO-LONG u4)
 (define-constant ERR-BAD-HEADER u5)
-(define-constant ERR-PROOF-TOO-SHORT u6)
-(define-constant ERR-TOO-MANY-WITNESSES u7)
-(define-constant ERR-INVALID-COMMITMENT u8)
-(define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u9)
+(define-constant ERR-HEADER-HEIGHT-MISMATCH u6)
+(define-constant ERR-INVALID-MERKLE-PROOF u7)
+(define-constant ERR-PROOF-TOO-SHORT u8)
+(define-constant ERR-TOO-MANY-WITNESSES u9)
+(define-constant ERR-INVALID-COMMITMENT u10)
+(define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
 
 ;;
 ;; Helper functions to parse bitcoin transactions
@@ -527,9 +529,9 @@
         (or
           (is-eq merkle-root txid) ;; true, if the transaction is the only transaction
           (try! (verify-merkle-proof reversed-txid (reverse-buff32 merkle-root) proof)))
-        (err u2))
+        (err ERR-INVALID-MERKLE-PROOF))
       (ok txid))
-    (err u1)))
+    (err ERR-HEADER-HEIGHT-MISMATCH)))
 
 
 ;; Determine whether or not a Bitcoin transaction
@@ -577,4 +579,3 @@
       (asserts! (try! (verify-merkle-proof reversed-wtxid witness-merkle-root
                           { tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
       (ok wtxid))))
-
