@@ -1,3 +1,8 @@
+;; @contract stateless contract to verify bitcoin transaction
+;; @version 3
+
+;; version 3 fixes tx-was-mined
+
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
 (define-constant ERR-TOO-MANY-TXINS u2)
@@ -177,23 +182,29 @@
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout (ignored bool)
                                    (state-res (response {ctx: { txbuff: (buff 1024), index: uint },
+                                                         remaining: uint,
                                                          txouts: (list 8 {value: uint,
                                                                           scriptPubKey: (buff 128)})}
                                                uint)))
     (match state-res
         state
-          (let ((parsed-value (try! (read-uint64 (get ctx state))))
-                (parsed-script (try! (read-varslice (get ctx parsed-value))))
-                (new-ctx (get ctx parsed-script)))
-            (ok {ctx: new-ctx,
-                txouts: (unwrap!
-                          (as-max-len?
-                              (append (get txouts state)
-                                  {   value: (get uint64 parsed-value),
-                                      scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
-                          u8)
-                          (err ERR-TOO-MANY-TXOUTS))}))
-        error (err error)))
+            (if (< u0 (get remaining state))
+                (let ((remaining (get remaining state))
+                      (parsed-value (try! (read-uint64 (get ctx state))))
+                      (parsed-script (try! (read-varslice (get ctx parsed-value))))
+                      (new-ctx (get ctx parsed-script)))
+                 (ok {ctx: new-ctx,
+                      remaining: (- remaining u1),
+                      txouts: (unwrap!
+                               (as-max-len?
+                                   (append (get txouts state)
+                                       {   value: (get uint64 parsed-value),
+                                           scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
+                                u8)
+                               (err ERR-TOO-MANY-TXOUTS))}))
+                (ok state))
+        error
+            (err error)))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
 ;; Returns (ok { txouts: (list { ... }), remaining: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
@@ -263,7 +274,7 @@
 ;; (ok {
 ;;      version: uint,                      ;; tx version
 ;;      segwit-marker: uint,
-;;      segwit-version: uint,
+;;      segwit-version: (optional uint),
 ;;      ins: (list 8
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
@@ -451,6 +462,7 @@
     (let ((block (unwrap! (parse-block-header header) (err ERR-BAD-HEADER))))
       (was-tx-mined-internal height tx header (get merkle-root block) proof)))
 
+
 (define-read-only (was-wtx-mined-compact (tx (buff 4096)) (witness-root-hash (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
   (was-wtx-mined-internal tx witness-root-hash proof))
 
@@ -502,20 +514,13 @@
   (asserts! (is-eq (unwrap! (slice? scriptPubKey u0 u6) false) 0x6a24aa21a9ed) false)
 )
 
-;; Verify block header and merkle proof
-;; This function must only called with the merkle root of the provided header
-(define-private (was-tx-mined-internal (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-  (if (verify-block-header header height)
-    (begin
-      ;; if the transaction is the only transaction
-      (if (is-eq merkle-root (get-txid tx))
-        (ok true)
-        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)
-      )
-    )
-    (err u1)
-  )
-)
+(define-read-only (was-tx-mined (height uint) (tx (buff 1024)) (header { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4) }) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
+    (was-tx-mined-internal height tx (contract-call? .clarity-bitcoin-helper concat-header header) (reverse-buff32 (get merkle-root header)) proof))
 
-(define-private (was-wtx-mined-internal (tx (buff 4096)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-  (verify-merkle-proof (get-reversed-txid tx) merkle-root proof))
+;; Verify block header and merkle proof.
+;; This function must only be called with the merkle root of the provided header.
+;; Use was-tx-mined-compact with header as a buffer or was-tx-mined with header as a tuple.
+(define-private (was-tx-mined-internal (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
+    (if (verify-block-header header height)
+        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)
+        (err u1)))
