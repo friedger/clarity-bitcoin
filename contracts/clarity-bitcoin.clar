@@ -136,7 +136,7 @@
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
 (define-read-only (read-next-txin (ignored bool)
-                                  (state-res (response {ctx: { txbuff: (buff 4096), index: uint },
+                                  (result (response {ctx: { txbuff: (buff 4096), index: uint },
                                                         remaining: uint,
                                                         txins: (list 8 {outpoint: {
                                                                                    hash: (buff 32),
@@ -144,8 +144,7 @@
                                                                         scriptSig: (buff 256),      ;; just big enough to hold a 2-of-3 multisig script
                                                                         sequence: uint})}
                                               uint)))
-    (match state-res
-        state
+    (let ((state (unwrap! result result)))
             (if (< u0 (get remaining state))
                 (let ((remaining (get remaining state))
                       (ctx (get ctx state))
@@ -166,9 +165,7 @@
                                           sequence: (get uint32 parsed-sequence)})
                                u8)
                               (err ERR-TOO-MANY-TXINS))}))
-                (ok state))
-        error
-            (err error)))
+                (ok state))))
 
 ;; Read a transaction's inputs.
 ;; Returns (ok { txins: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
@@ -189,24 +186,22 @@
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout (ignored bool)
-                                   (state-res (response {ctx: { txbuff: (buff 4096), index: uint },
-                                                         txouts: (list 8 {value: uint,
-                                                                          scriptPubKey: (buff 128)})}
+                                   (result (response {ctx: { txbuff: (buff 4096), index: uint },
+                                                      txouts: (list 8 {value: uint,
+                                                                       scriptPubKey: (buff 128)})}
                                                uint)))
-    (match state-res
-        state
-          (let ((parsed-value (try! (read-uint64 (get ctx state))))
-                (parsed-script (try! (read-varslice (get ctx parsed-value))))
-                (new-ctx (get ctx parsed-script)))
-            (ok {ctx: new-ctx,
-                txouts: (unwrap!
-                          (as-max-len?
-                              (append (get txouts state)
-                                  {   value: (get uint64 parsed-value),
-                                      scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
-                          u8)
-                          (err ERR-TOO-MANY-TXOUTS))}))
-        error (err error)))
+    (let ((state (unwrap! result result))
+          (parsed-value (try! (read-uint64 (get ctx state))))
+          (parsed-script (try! (read-varslice (get ctx parsed-value))))
+          (new-ctx (get ctx parsed-script)))
+        (ok {ctx: new-ctx,
+            txouts: (unwrap!
+                      (as-max-len?
+                          (append (get txouts state)
+                              {   value: (get uint64 parsed-value),
+                                  scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
+                      u8)
+                      (err ERR-TOO-MANY-TXOUTS))})))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
 ;; Returns (ok { txouts: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
@@ -223,49 +218,56 @@
 
 ;; Read the stack item of the witness field, and update the index in ctx to point to the next item.
 (define-read-only (read-next-item (ignored bool)
-                                   (state-res (response {ctx: { txbuff: (buff 4096), index: uint },
+                                   (result (response {ctx: { txbuff: (buff 4096), index: uint },
                                                          items: (list 8 (buff 128))}
                                                uint)))
-    (match state-res
-        state
-          (let ((parsed-item (try! (read-varslice (get ctx state))))
-                (new-ctx (get ctx parsed-item)))
-            (ok {ctx: new-ctx,
-                items: (unwrap!
-                          (as-max-len?
-                              (append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG)))
-                          u8)
-                          (err ERR-TOO-MANY-WITNESSES))}))
-        error
-            (err error)))
+    (let ((state (unwrap! result result))
+          (parsed-item (try! (read-varslice (get ctx state))))
+          (new-ctx (get ctx parsed-item)))
+        (ok {ctx: new-ctx,
+            items: (unwrap!
+                      (as-max-len?
+                          (append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG)))
+                      u8)
+                      (err ERR-TOO-MANY-WITNESSES))})))
 
+;; Read the next witness data, and update the index in ctx to point to the next witness.
 (define-read-only (read-next-witness (ignored bool)
-  (state-res (response
+  (result (response
     { ctx: {txbuff: (buff 4096), index: uint}, witnesses: (list 8 (list 8 (buff 128))) } uint)))
-  (match state-res
-    state (let (
-      (parsed-num-items (try! (read-varint (get ctx state))))
-      (ctx (get ctx parsed-num-items))
-      (varint (get varint parsed-num-items)))
-        (if (> varint u0)
-          (let ((parsed-items (try! (fold read-next-item (bool-list-of-len varint) (ok { ctx: ctx, items: (list)})))))
+  (let ((state (unwrap! result result))
+        (parsed-num-items (try! (read-varint (get ctx state))))
+        (ctx (get ctx parsed-num-items))
+        (varint (get varint parsed-num-items)))
+      (if (> varint u0)
+        ;; read all stack items for current txin and add to witnesses.
+        (let ((parsed-items (try! (fold read-next-item (bool-list-of-len varint) (ok { ctx: ctx, items: (list)})))))
             (ok {
               witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get items parsed-items)) u8)),
               ctx: (get ctx parsed-items)
             }))
-          (begin
-            (ok {
-              witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u8)),
-              ctx: ctx
-            }))))
-    error (err u1)))
+        ;; txin has not witness data, add empty list to witnesses.
+        (ok {
+          witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u8)),
+          ctx: ctx
+        }))))
 
+;; Read all witness data in a transaction.  Update the index to point to the end of the tx, if all goes well.
+;; Returns (ok {witnesses: (list 8 (list 8 (buff 128))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
 (define-read-only (read-witnesses (ctx { txbuff: (buff 4096), index: uint }) (num-txins uint))
   (fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
 
 ;;
 ;; Helper functions for smart contract that want to use information of a Bitcoin transaction
 ;;
+
+;; Check whether the transaction has witness data or not
+;; Returns true if marker/txin counter is 0x00, false otherwise.
+(define-read-only (has-witness-data (tx (buff 4096)))
+  (is-eq (element-at? tx u4) (some 0x00)))
 
 ;;
 ;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
