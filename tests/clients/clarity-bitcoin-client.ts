@@ -8,6 +8,10 @@ export function parseTx(tx: string, deployer: Account) {
   return Tx.contractCall("clarity-bitcoin", "parse-tx", [tx], deployer.address);
 }
 
+export function parseWtx(wtx: string, deployer: Account) {
+  return Tx.contractCall("clarity-bitcoin", "parse-wtx", [wtx], deployer.address);
+}
+
 export function parseBlockHeader(headerBuff: Uint8Array, deployer: Account) {
   return Tx.contractCall(
     "clarity-bitcoin",

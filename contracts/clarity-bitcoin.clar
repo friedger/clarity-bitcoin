@@ -182,29 +182,23 @@
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout (ignored bool)
                                    (state-res (response {ctx: { txbuff: (buff 1024), index: uint },
-                                                         remaining: uint,
                                                          txouts: (list 8 {value: uint,
                                                                           scriptPubKey: (buff 128)})}
                                                uint)))
     (match state-res
         state
-            (if (< u0 (get remaining state))
-                (let ((remaining (get remaining state))
-                      (parsed-value (try! (read-uint64 (get ctx state))))
-                      (parsed-script (try! (read-varslice (get ctx parsed-value))))
-                      (new-ctx (get ctx parsed-script)))
-                 (ok {ctx: new-ctx,
-                      remaining: (- remaining u1),
-                      txouts: (unwrap!
-                               (as-max-len?
-                                   (append (get txouts state)
-                                       {   value: (get uint64 parsed-value),
-                                           scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
-                                u8)
-                               (err ERR-TOO-MANY-TXOUTS))}))
-                (ok state))
-        error
-            (err error)))
+          (let ((parsed-value (try! (read-uint64 (get ctx state))))
+                (parsed-script (try! (read-varslice (get ctx parsed-value))))
+                (new-ctx (get ctx parsed-script)))
+            (ok {ctx: new-ctx,
+                txouts: (unwrap!
+                          (as-max-len?
+                              (append (get txouts state)
+                                  {   value: (get uint64 parsed-value),
+                                      scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
+                          u8)
+                          (err ERR-TOO-MANY-TXOUTS))}))
+        error (err error)))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
 ;; Returns (ok { txouts: (list { ... }), remaining: uint, ctx: { txbuff: (buff 1024), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
@@ -274,7 +268,7 @@
 ;; (ok {
 ;;      version: uint,                      ;; tx version
 ;;      segwit-marker: uint,
-;;      segwit-version: (optional uint),
+;;      segwit-version: uint,
 ;;      ins: (list 8
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
@@ -457,17 +451,12 @@
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
 ;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
-
 (define-read-only (was-tx-mined-compact (height uint) (tx (buff 1024)) (header (buff 80)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
     (let ((block (unwrap! (parse-block-header header) (err ERR-BAD-HEADER))))
       (was-tx-mined-internal height tx header (get merkle-root block) proof)))
 
-
-(define-read-only (was-wtx-mined-compact (tx (buff 4096)) (witness-root-hash (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-  (was-wtx-mined-internal tx witness-root-hash proof))
-
 ;; It should return (ok wtxid) if it was mined
-(define-public (was-segwit-tx-mined-compact
+(define-read-only (was-segwit-tx-mined-compact
 	(burn-height uint) ;; bitcoin block height
 	(tx (buff 4096)) ;; tx to check
 	(header (buff 80)) ;; bitcoin block header
@@ -487,11 +476,12 @@
       (parsed-ctx (try! (parse-tx ctx)))
       (witness-out (get-commitment-scriptPubKey (get outs parsed-ctx)))
       (final-hash (sha256 (sha256 (concat witness-merkle-root witness-reserved-data))))
+      (reversed-txid (get-reversed-txid tx))
+      (txid (reverse-buff32 reversed-txid))
     )
       (asserts! (is-eq witness-out (concat 0x6a24aa21a9ed final-hash)) (err ERR-INVALID-COMMITMENT))
-      (asserts! (try! (was-wtx-mined-compact tx witness-merkle-root { tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
-
-      (ok (get-txid tx))
+      (asserts! (try! (verify-merkle-proof reversed-txid witness-merkle-root { tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
+      (ok txid)
     )
   )
 )
@@ -520,7 +510,18 @@
 ;; Verify block header and merkle proof.
 ;; This function must only be called with the merkle root of the provided header.
 ;; Use was-tx-mined-compact with header as a buffer or was-tx-mined with header as a tuple.
+;; Returns txid if tx was mined else err u1 if the header is invalid or err u2 if the proof is invalid.
 (define-private (was-tx-mined-internal (height uint) (tx (buff 1024)) (header (buff 80)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-    (if (verify-block-header header height)
-        (verify-merkle-proof (get-reversed-txid tx) (reverse-buff32 merkle-root) proof)
-        (err u1)))
+  (if (verify-block-header header height)
+    (let ((reversed-txid (get-reversed-txid tx))
+          (txid (reverse-buff32 reversed-txid)))
+      ;; verify merkle proof
+      (asserts!
+        (or
+          (is-eq merkle-root txid) ;; if the transaction is the only transaction
+          (try! (verify-merkle-proof reversed-txid (reverse-buff32 merkle-root) proof)))
+        (err u2))
+      (ok txid))
+    (err u1)
+  )
+)
