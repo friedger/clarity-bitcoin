@@ -14,6 +14,13 @@
 (define-constant ERR-INVALID-COMMITMENT u8)
 (define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u9)
 
+;;
+;; Helper functions to parse bitcoin transactions
+;;
+
+;; Create a list with n elments `true`. n must be smaller than 9.
+(define-private (bool-list-of-len (n uint))
+  (unwrap-panic (slice? (list true true true true true true true true) u0 n)))
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
@@ -174,7 +181,7 @@
           (new-ctx (get ctx parsed-num-txins)))
      (if (> num-txins u8)
          (err ERR-TOO-MANY-TXINS)
-         (fold read-next-txin (unwrap-panic (slice? (list true true true true true true true true) u0 num-txins)) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
+         (fold read-next-txin (bool-list-of-len num-txins) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
 
 ;; Read the next transaction output, and update the index in ctx to point to the next output.
 ;; Returns (ok { ... }) on success
@@ -212,22 +219,23 @@
           (new-ctx (get ctx parsed-num-txouts)))
      (if (> num-txouts u8)
          (err ERR-TOO-MANY-TXOUTS)
-         (fold read-next-txout (unwrap-panic (slice? (list true true true true true true true true) u0 num-txouts)) (ok { ctx: new-ctx, txouts: (list)})))))
+         (fold read-next-txout (bool-list-of-len num-txouts) (ok { ctx: new-ctx, txouts: (list)})))))
 
-(define-read-only (read-next-element (ignored bool)
+;; Read the stack item of the witness field, and update the index in ctx to point to the next item.
+(define-read-only (read-next-item (ignored bool)
                                    (state-res (response {ctx: { txbuff: (buff 4096), index: uint },
-                                                         elements: (list 8 (buff 128))}
+                                                         items: (list 8 (buff 128))}
                                                uint)))
     (match state-res
         state
-          (let ((parsed-script (try! (read-varslice (get ctx state))))
-                (new-ctx (get ctx parsed-script)))
+          (let ((parsed-item (try! (read-varslice (get ctx state))))
+                (new-ctx (get ctx parsed-item)))
             (ok {ctx: new-ctx,
-                elements: (unwrap!
+                items: (unwrap!
                           (as-max-len?
-                              (append (get elements state) (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG)))
+                              (append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG)))
                           u8)
-                          (err ERR-TOO-MANY-TXOUTS))}))
+                          (err ERR-TOO-MANY-WITNESSES))}))
         error
             (err error)))
 
@@ -240,29 +248,72 @@
       (ctx (get ctx parsed-num-items))
       (varint (get varint parsed-num-items)))
         (if (> varint u0)
-          (let ((parsed-elements (try! (fold read-next-element (unwrap-panic (slice? (list true true true true true true true true) u0 varint)) (ok { ctx: ctx, elements: (list)})))))
+          (let ((parsed-items (try! (fold read-next-item (bool-list-of-len varint) (ok { ctx: ctx, items: (list)})))))
             (ok {
-              witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get elements parsed-elements)) u8)),
-              ctx: (get ctx parsed-elements)
-            })
-          )
+              witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get items parsed-items)) u8)),
+              ctx: (get ctx parsed-items)
+            }))
           (begin
             (ok {
               witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u8)),
-              ctx: (get ctx parsed-num-items)
-            })
-          )
-        )
-      )
-    error (err u1)
-  )
-)
+              ctx: ctx
+            }))))
+    error (err u1)))
 
 (define-read-only (read-witnesses (ctx { txbuff: (buff 4096), index: uint }) (num-txins uint))
-  (fold read-next-witness (unwrap-panic (slice? (list true true true true true true true true) u0 num-txins)) (ok { ctx: ctx, witnesses: (list) }))
-)
+  (fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
 
+;;
 ;; Helper functions for smart contract that want to use information of a Bitcoin transaction
+;;
+
+;;
+;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; Returns a tuple structured as follows on success:
+;; (ok {
+;;      version: uint,                      ;; tx version
+;;      segwit-marker: uint,
+;;      segwit-version: uint,
+;;      ins: (list 8
+;;          {
+;;              outpoint: {                 ;; pointer to the utxo this input consumes
+;;                  hash: (buff 32),
+;;                  index: uint
+;;              },
+;;              scriptSig: (buff 256),      ;; spending condition script
+;;              sequence: uint
+;;          }),
+;;      outs: (list 8
+;;          {
+;;              value: uint,                ;; satoshis sent
+;;              scriptPubKey: (buff 128)    ;; parse this to get an address
+;;          }),
+;;      witnesses: (list 8 (list 8 (buff 128))),
+;;      locktime: uint
+;; })
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
+;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
+(define-read-only (parse-wtx (tx (buff 4096)))
+    (let ((ctx { txbuff: tx, index: u0})
+          (parsed-version (try! (read-uint32 ctx)))
+          (parsed-segwit-marker (try! (read-uint8 (get ctx parsed-version))))
+          (parsed-segwit-version (try! (read-uint8 (get ctx parsed-segwit-marker))))
+          (parsed-txins (try! (read-txins (get ctx parsed-segwit-version))))
+          (parsed-txouts (try! (read-txouts (get ctx parsed-txins))))
+          (parsed-witnesses (try! (read-witnesses (get ctx parsed-txouts) (len (get txins parsed-txins)))))
+          (parsed-locktime (try! (read-uint32 (get ctx parsed-witnesses))))
+          )
+     (ok {version: (get uint32 parsed-version),
+          segwit-marker: (get uint8 parsed-segwit-marker),
+          segwit-version: (get uint8 parsed-segwit-version),
+          ins: (get txins parsed-txins),
+          outs: (get txouts parsed-txouts),
+          witnesses: (get witnesses parsed-witnesses),
+          locktime: (get uint32 parsed-locktime)
+        })))
+
 ;;
 ;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
 ;; Returns a tuple structured as follows on success:
@@ -288,28 +339,6 @@
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
 ;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
-(define-read-only (parse-wtx (tx (buff 4096)))
-    (let ((ctx { txbuff: tx, index: u0})
-          (parsed-version (try! (read-uint32 ctx)))
-          (parsed-segwit-marker (try! (read-uint8 (get ctx parsed-version))))
-          (parsed-segwit-version (try! (read-uint8 (get ctx parsed-segwit-marker))))
-          (parsed-txins (try! (read-txins (get ctx parsed-segwit-version))))
-          (parsed-txouts (try! (read-txouts (get ctx parsed-txins))))
-          (parsed-witnesses (try! (read-witnesses (get ctx parsed-txouts) (len (get txins parsed-txins)))))
-          (parsed-locktime (try! (read-uint32 (get ctx parsed-witnesses))))
-          )
-     (ok {version: (get uint32 parsed-version),
-          segwit-marker: (get uint8 parsed-segwit-marker),
-          segwit-version: (get uint8 parsed-segwit-version),
-          ins: (get txins parsed-txins),
-          outs: (get txouts parsed-txouts),
-          witnesses: (get witnesses parsed-witnesses),
-          locktime: (get uint32 parsed-locktime)
-        }
-      )
-  )
-)
-
 (define-read-only (parse-tx (tx (buff 4096)))
     (let ((ctx { txbuff: tx, index: u0})
           (parsed-version (try! (read-uint32 ctx)))
@@ -355,8 +384,7 @@
 (define-map mock-burnchain-header-hashes uint (buff 32))
 
 (define-public (mock-add-burnchain-block-header-hash (burn-height uint) (hash (buff 32)))
- (ok (map-set mock-burnchain-header-hashes burn-height hash))
-)
+ (ok (map-set mock-burnchain-header-hashes burn-height hash)))
 
 (define-read-only (get-bc-h-hash (bh uint))
    (if DEBUG-MODE (map-get? mock-burnchain-header-hashes bh) (get-burn-block-info? header-hash bh)))
@@ -368,8 +396,7 @@
 (define-read-only (verify-block-header (headerbuff (buff 80)) (expected-block-height uint))
   (match (get-bc-h-hash expected-block-height)
       bhh (is-eq bhh (reverse-buff32 (sha256 (sha256 headerbuff))))
-      false)
-)
+      false))
 
 ;; Get the txid of a transaction, but little-endian.
 ;; This is the reverse of what you see on block explorers.
@@ -424,7 +451,7 @@
         (ok
           (get verified
               (fold inner-merkle-proof-verify
-                  (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13)
+                  (unwrap-panic (slice? (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13) u0 (get tree-depth proof)))
                   { path: (+ (pow u2 (get tree-depth proof)) (get tx-index proof)), root-hash: merkle-root, proof-hashes: (get hashes proof), cur-hash: reversed-txid, tree-depth: (get tree-depth proof), verified: false})))))
 
 ;; Helper for wtxid commitments
@@ -432,11 +459,10 @@
 ;; Gets the scriptPubKey in the last output that follows the 0x6a24aa21a9ed pattern regardless of its content
 ;; as per BIP-0141 (https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure)
 (define-read-only (get-commitment-scriptPubKey (outs (list 8 { value: uint, scriptPubKey: (buff 128) })))
-  (fold read-next-commitment-scriptPubKey outs 0x))
+  (fold inner-get-commitment-scriptPubKey outs 0x))
 
-(define-read-only (read-next-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 128) }) (result (buff 128)))
-  (let
-    ((commitment (get scriptPubKey out)))
+(define-read-only (inner-get-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 128) }) (result (buff 128)))
+  (let ((commitment (get scriptPubKey out)))
     (if (is-commitment-pattern commitment) commitment result)))
 
 ;; Returns false, if scriptPubKey does not have the commitment prefix.
@@ -447,43 +473,8 @@
 ;; Top-level verification functions
 ;;
 
-;; Determine whether or not a Bitcoin transaction
-;; with witnesses was mined in a prior Bitcoin block.
-;; It should return (ok wtxid) if it was mined
-(define-read-only (was-segwit-tx-mined-compact
-	(burn-height uint) ;; bitcoin block height
-	(tx (buff 4096)) ;; tx to check
-	(header (buff 80)) ;; bitcoin block header
-	(tx-index uint)
-	(tree-depth uint)
-	(wproof (list 14 (buff 32))) ;; merkle proof for wtxids
-  (witness-merkle-root (buff 32)) ;; merkle root of wtxids
-  (witness-reserved-data (buff 32)) ;; merkle root of wtxids
-	(ctx (buff 4096)) ;; non-segwit coinbase tx, contains the witness root hash
-	(cproof (list 14 (buff 32))) ;; merkle proof for coinbase tx
-	;; proof and cproof trees could somehow be condensed into a single list
-	;; because they converge at some point
-	)
-  (begin
-    (try! (was-tx-mined-compact burn-height ctx header { tx-index: u0, hashes: cproof, tree-depth: tree-depth }))
-    (let (
-      (witness-out (get-commitment-scriptPubKey
-        ;; check if marker/in-counter is 0.
-        (if (is-eq (element-at? ctx u4) (some 0x00)) (get outs (try! (parse-wtx ctx))) (get outs (try! (parse-tx ctx)))))
-      )
-      (final-hash (sha256 (sha256 (concat witness-merkle-root witness-reserved-data))))
-      (reversed-txid (get-reversed-txid tx))
-      (txid (reverse-buff32 reversed-txid))
-    )
-      (asserts! (is-eq witness-out (concat 0x6a24aa21a9ed final-hash)) (err ERR-INVALID-COMMITMENT))
-      (asserts! (try! (verify-merkle-proof reversed-txid witness-merkle-root { tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
-      (ok txid)
-    )
-  )
-)
-
-
-;; Determine whether or not a Bitcoin transaction was mined in a prior Bitcoin block.
+;; Determine whether or not a Bitcoin transaction without witnesses
+;; was mined in a prior Bitcoin block.
 ;; It takes the block height, the transaction, the block header and a merkle proof, and determines that:
 ;; * the block header corresponds to the block that was mined at the given Bitcoin height
 ;; * the transaction's merkle proof links it to the block header's merkle root.
@@ -536,6 +527,52 @@
           (try! (verify-merkle-proof reversed-txid (reverse-buff32 merkle-root) proof)))
         (err u2))
       (ok txid))
-    (err u1)
-  )
-)
+    (err u1)))
+
+
+;; Determine whether or not a Bitcoin transaction
+;; with witnesses was mined in a prior Bitcoin block.
+;; It takes
+;; a) the bitcoin block height, the transaction "tx" with witness data,
+;;    the bitcoin block header, the tx index in the block and
+;; b) the depth of merkle proof of the block and
+;; c) the merkle proof of the wtxid "wproof", its root "witness-merkle-proof",
+;;    the witness reserved value and
+;; d) the coinbase transaction "ctx" without witnesses (non-segwit) and its merkle proof "cproof".
+;;
+;; It determines that:
+;; * the block header corresponds to the block that was mined at the given Bitcoin height
+;; * the coinbase tx was mined and it contains the commitment to the wtxids
+;; * the wtxid of the tx is part of the commitment.
+;;
+;; The tree depth for wproof and cproof are the same.
+;; The coinbase tx index is always 0.
+;;
+;; It returns (ok wtxid), if it was mined.
+(define-read-only (was-segwit-tx-mined-compact
+	(height uint)
+	(tx (buff 4096))
+	(header (buff 80))
+	(tx-index uint)
+	(tree-depth uint)
+	(wproof (list 14 (buff 32)))
+  (witness-merkle-root (buff 32))
+  (witness-reserved-value (buff 32))
+	(ctx (buff 4096))
+	(cproof (list 14 (buff 32))))
+  (begin
+    ;; verify that the coinbase tx is correct
+    (try! (was-tx-mined-compact height ctx header { tx-index: u0, hashes: cproof, tree-depth: tree-depth }))
+    (let (
+      (witness-out (get-commitment-scriptPubKey (get outs (try! (parse-tx ctx)))))
+      (final-hash (sha256 (sha256 (concat witness-merkle-root witness-reserved-value))))
+      (reversed-wtxid (get-reversed-txid tx))
+      (wtxid (reverse-buff32 reversed-wtxid))
+    )
+      ;; verify wtxid commitment
+      (asserts! (is-eq witness-out (concat 0x6a24aa21a9ed final-hash)) (err ERR-INVALID-COMMITMENT))
+      ;; verify witness merkle tree
+      (asserts! (try! (verify-merkle-proof reversed-wtxid witness-merkle-root
+                          { tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
+      (ok wtxid))))
+
