@@ -11,9 +11,9 @@ These are the main functions that can be used to verify that a tx was mined in a
 
 The block header can be provided as an object with the header details or as a buffer.
 
-* was-tx-mined-compact (header as a buffer)
-* was-tx-mined (header as an object)
-* was-segwit-tx-mined-compact (header as buffer)
+* `was-tx-mined-compact` (header as a buffer)
+* `was-tx-mined` (header as an object)
+* `was-segwit-tx-mined-compact` (header as buffer)
 
 The two functions for non-segwit transaction take the following arguments in the same order:
 
