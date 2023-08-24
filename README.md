@@ -9,6 +9,7 @@ Deployments on mainnet:
 * Version 2: Buggy - Do not use 
 * [Version 1](https://explorer.hiro.so/txid/0x8b112f2b50c1fa864997b7496aaad1e3940700309a3fdcc6c07f1c6f8b9cfb7b?chain=mainnet): Initial version with no verification for tx in flash blocks
 
+Branch (`docs`)[https://github.com/friedger/clarity-bitcoin/tree/docs] contains a gitbook: (Clarity <-> Bitcoin Library)[https://clarity-bitcoin.gitbook.io/clarity-bitcoin-library/].
 ## Clarity Functions
 
 The main function is about verifying that a non-segwit transaction was mined in a certain bitcoin block. The verification happens in two steps:
