@@ -47,6 +47,11 @@ path = 'contracts/tests/clarity-bitcoin_test.clar'
 clarity_version = 2
 epoch = 2.1
 
+[contracts.clarity-bitcoin_segwit_test]
+path = 'contracts/tests/clarity-bitcoin_segwit_test.clar'
+clarity_version = 2
+epoch = 2.1
+
 [repl.analysis]
 passes = ['check_checker']
 

@@ -1,5 +1,7 @@
 #!/bin/sh
 mkdir -p .test
 mkdir -p .coverage
-clarinet run --allow-write ext/generate-tests.ts
+rm -rf .test/*
+cp -r tests .test
+clarinet run --allow-write --allow-read ext/generate-tests.ts
 clarinet test --coverage .coverage/lcov.info .test

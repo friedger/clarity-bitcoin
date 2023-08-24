@@ -6,3 +6,4 @@ history.txt
 contracts/clarity-bitcoin-v2.clar
 
 .test
+.coverage
