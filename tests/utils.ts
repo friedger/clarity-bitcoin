@@ -1,22 +1,27 @@
 export function hexToBytes(hexString: string) {
-  return Uint8Array.from(
-    hexString.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
+  if (hexString) {
+    return Uint8Array.from(
+      hexString.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+    );
+  } else {
+    return new Uint8Array(0);
+  }
 }
 
 const byteToHexCache: string[] = new Array(0xff);
 for (let n = 0; n <= 0xff; ++n) {
-  byteToHexCache[n] = n.toString(16).padStart(2, '0');
+  byteToHexCache[n] = n.toString(16).padStart(2, "0");
 }
 
 export function bytesToHex(uint8a: Uint8Array) {
   const hexOctets = new Array(uint8a.length);
-  for (let i = 0; i < uint8a.length; ++i) hexOctets[i] = byteToHexCache[uint8a[i]];
-  return hexOctets.join('');
+  for (let i = 0; i < uint8a.length; ++i)
+    hexOctets[i] = byteToHexCache[uint8a[i]];
+  return hexOctets.join("");
 }
 
 export function hexReverse(hexString: string) {
-  return bytesToHex(hexToBytes(hexString).reverse())
+  return bytesToHex(hexToBytes(hexString).reverse());
 }
 export interface TxObject {
   locktime: number;

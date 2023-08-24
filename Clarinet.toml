@@ -1,54 +1,62 @@
-
 [project]
-name = "clarity-bitcoin"
-description = ""
+name = 'clarity-bitcoin'
+description = ''
 authors = []
 telemetry = true
-cache_dir = "./.cache"
-
-[contracts.stx-account]
-path = "contracts/helper-stx-account.clar"
-clarity_version = 2
-epoch = 2.1
+cache_dir = './.cache'
+requirements = []
 
 [contracts.clarity-bitcoin]
-path = "contracts/clarity-bitcoin.clar"
+path = 'contracts/clarity-bitcoin.clar'
 clarity_version = 2
 epoch = 2.1
 
 [contracts.clarity-bitcoin-helper]
-path = "contracts/clarity-bitcoin-helper.clar"
-clarity_version = 2
-epoch = 2.1
-
-[contracts.stx-oracle]
-path = "contracts/stx-oracle.clar"
+path = 'contracts/clarity-bitcoin-helper.clar'
 clarity_version = 2
 epoch = 2.1
 
 [contracts.helper]
-path = "contracts/helper.clar"
+path = 'contracts/helper.clar'
 clarity_version = 2
 epoch = 2.1
 
 [contracts.send-to-first-input]
-path = "contracts/examples/send-to-first-input.clar"
+path = 'contracts/examples/send-to-first-input.clar'
 clarity_version = 2
 epoch = 2.1
 
 [contracts.send-to-first-input-compact]
-path = "contracts/examples/send-to-first-input-compact.clar"
+path = 'contracts/examples/send-to-first-input-compact.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.stx-account]
+path = 'contracts/helper-stx-account.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.stx-oracle]
+path = 'contracts/stx-oracle.clar'
+clarity_version = 2
+epoch = 2.1
+
+
+[contracts.clarity-bitcoin_test]
+path = 'contracts/tests/clarity-bitcoin_test.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.clarity-bitcoin_segwit_test]
+path = 'contracts/tests/clarity-bitcoin_segwit_test.clar'
 clarity_version = 2
 epoch = 2.1
 
 [repl.analysis]
-passes = ["check_checker"]
-check_checker = { trusted_sender = false, trusted_caller = false, callee_filter = false }
+passes = ['check_checker']
 
-# Check-checker settings:
-# trusted_sender: if true, inputs are trusted after tx_sender has been checked.
-# trusted_caller: if true, inputs are trusted after contract-caller has been checked.
-# callee_filter: if true, untrusted data may be passed into a private function without a
-# warning, if it gets checked inside. This check will also propagate up to the
-# caller.
-# More informations: https://www.hiro.so/blog/new-safety-checks-in-clarinet
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false

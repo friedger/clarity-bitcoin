@@ -20,12 +20,12 @@
     (let (
         ;; extract parts of Bitcoin transaction
           (tx-obj (try! (contract-call? .clarity-bitcoin parse-tx tx)))
-          (was-mined (try! (contract-call? .clarity-bitcoin was-tx-mined height tx header proof)))
+          (id-of-mined-tx (try! (contract-call? .clarity-bitcoin was-tx-mined height tx header proof)))
           (first-output (unwrap! (element-at (get outs tx-obj) u0) err-out-not-found))
           (first-input (unwrap! (element-at (get ins tx-obj) u0) err-in-not-found)))
         ;; TODO check whether the tx-sender is the same as the first output
 
         ;; transfer stx to first-input
-        (if was-mined
-            (stx-transfer? (sats-to-stx (get value first-output)) tx-sender (unwrap! (p2pkh-to-principal (get scriptSig first-input)) err-unsupported-tx))
-            err-not-found)))
+        (stx-transfer? (sats-to-stx (get value first-output))
+          tx-sender
+          (unwrap! (p2pkh-to-principal (get scriptSig first-input)) err-unsupported-tx))))

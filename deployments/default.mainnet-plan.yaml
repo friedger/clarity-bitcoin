@@ -9,10 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: clarity-bitcoin-lib-v3
+            contract-name: clarity-bitcoin-lib-v4
             expected-sender: SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9
             cost: 114373
-            path: contracts/clarity-bitcoin.clar
+            path: contracts/clarity-bitcoin-v4.clar
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.1"
