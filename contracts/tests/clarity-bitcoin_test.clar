@@ -84,7 +84,7 @@
     ;; block id: 00000000096ae97d41a543592c3680477444acdc86c877aeb4832744691cb94b
     (raw-block-header 0x000000208af1a70ab2ed062c7ac53eb56b053498db50f0d9c41f0dc8a5efcb1b000000007b64b9e16eb97b1fb32977aa00e2cb7418856b1e794e232be4f3b4b0512cb31256845064ffff001dc3cdbab0)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
     (contract-call? .clarity-bitcoin was-tx-mined-compact

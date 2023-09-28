@@ -1,7 +1,5 @@
 ;; @contract stateless contract to verify bitcoin transaction
-;; @version 4
-
-;; version 4 adds support for segwit transactions
+;; @version 5
 
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
@@ -15,6 +13,8 @@
 (define-constant ERR-TOO-MANY-WITNESSES u9)
 (define-constant ERR-INVALID-COMMITMENT u10)
 (define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
+(define-constant ERR-NOT-SEGWIT-TRANSACTION u12)
+(define-constant ERR-LEFTOVER-DATA u13)
 
 ;;
 ;; Helper functions to parse bitcoin transactions
@@ -263,11 +263,13 @@
 
 ;;
 ;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; It will also calculate and return the TXID if calculate-txid is set to true.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
 ;;      version: uint,                      ;; tx version
 ;;      segwit-marker: uint,
 ;;      segwit-version: uint,
+;;      txid: (optional (buff 32))
 ;;      ins: (list 8
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
@@ -289,7 +291,9 @@
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
 ;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
-(define-read-only (parse-wtx (tx (buff 4096)))
+;; Returns (err ERR-NOT-SEGWIT-TRANSACTION) if tx is not a segwit transaction.
+;; Returns (err ERR-LEFTOVER-DATA) if the tx buffer contains leftover data at the end.
+(define-read-only (parse-wtx (tx (buff 4096)) (calculate-txid bool))
 		(let ((ctx { txbuff: tx, index: u0})
 					(parsed-version (try! (read-uint32 ctx)))
 					(parsed-segwit-marker (try! (read-uint8 (get ctx parsed-version))))
@@ -299,14 +303,24 @@
 					(parsed-witnesses (try! (read-witnesses (get ctx parsed-txouts) (len (get txins parsed-txins)))))
 					(parsed-locktime (try! (read-uint32 (get ctx parsed-witnesses))))
 					)
-		 (ok {version: (get uint32 parsed-version),
-					segwit-marker: (get uint8 parsed-segwit-marker),
-					segwit-version: (get uint8 parsed-segwit-version),
-					ins: (get txins parsed-txins),
-					outs: (get txouts parsed-txouts),
-					witnesses: (get witnesses parsed-witnesses),
-					locktime: (get uint32 parsed-locktime)
-				})))
+		(asserts! (and (is-eq (get uint8 parsed-segwit-marker) u0) (is-eq (get uint8 parsed-segwit-version) u1)) (err ERR-NOT-SEGWIT-TRANSACTION))
+		(asserts! (is-eq (len tx) (get index (get ctx parsed-locktime))) (err ERR-LEFTOVER-DATA))
+		(ok {version: (get uint32 parsed-version),
+			segwit-marker: (get uint8 parsed-segwit-marker),
+			segwit-version: (get uint8 parsed-segwit-version),
+			ins: (get txins parsed-txins),
+			outs: (get txouts parsed-txouts),
+			txid: (if calculate-txid
+				(some (reverse-buff32 (sha256 (sha256
+					(concat
+						(unwrap-panic (slice? tx u0 u4))
+					(concat
+						(unwrap-panic (slice? tx (get index (get ctx parsed-segwit-version)) (get index (get ctx parsed-txouts))))
+						(unwrap-panic (slice? tx (get index (get ctx parsed-witnesses)) (len tx)))))))))
+				none),
+			witnesses: (get witnesses parsed-witnesses),
+			locktime: (get uint32 parsed-locktime)
+		})))
 
 ;;
 ;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
@@ -333,16 +347,18 @@
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
 ;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
+;; Returns (err ERR-LEFTOVER-DATA) if the tx buffer contains leftover data at the end.
 (define-read-only (parse-tx (tx (buff 4096)))
 		(let ((ctx { txbuff: tx, index: u0})
-					(parsed-version (try! (read-uint32 ctx)))
-					(parsed-txins (try! (read-txins (get ctx parsed-version))))
-					(parsed-txouts (try! (read-txouts (get ctx parsed-txins))))
-					(parsed-locktime (try! (read-uint32 (get ctx parsed-txouts)))))
-		 (ok {version: (get uint32 parsed-version),
-					ins: (get txins parsed-txins),
-					outs: (get txouts parsed-txouts),
-					locktime: (get uint32 parsed-locktime)})))
+			(parsed-version (try! (read-uint32 ctx)))
+			(parsed-txins (try! (read-txins (get ctx parsed-version))))
+			(parsed-txouts (try! (read-txouts (get ctx parsed-txins))))
+			(parsed-locktime (try! (read-uint32 (get ctx parsed-txouts)))))
+		(asserts! (is-eq (len tx) (get index (get ctx parsed-locktime))) (err ERR-LEFTOVER-DATA))
+		(ok {version: (get uint32 parsed-version),
+			ins: (get txins parsed-txins),
+			outs: (get txouts parsed-txouts),
+			locktime: (get uint32 parsed-locktime)})))
 
 ;; Parse a Bitcoin block header.
 ;; Returns a tuple structured as folowed on success:
@@ -368,9 +384,6 @@
 					timestamp: (get uint32 parsed-timestamp),
 					nbits: (get uint32 parsed-nbits),
 					nonce: (get uint32 parsed-nonce)})))
-
-;; (define-read-only (get-bc-h-hash (bh uint))
-;;   (get-burn-block-info? header-hash bh))
 
 ;; MOCK section
 (define-constant DEBUG-MODE true)

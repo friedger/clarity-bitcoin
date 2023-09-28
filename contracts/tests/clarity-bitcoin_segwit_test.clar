@@ -1,6 +1,8 @@
 (define-constant test-contract-principal (as-contract tx-sender))
 (define-constant zero-address 'SP000000000000000000002Q6VF78)
 
+(define-constant ERR-NOT-SEGWIT-TRANSACTION u12)
+
 (define-public (add-burnchain-block-header-hash (burn-height uint) (header (buff 80)))
   (contract-call? .clarity-bitcoin mock-add-burnchain-block-header-hash burn-height (contract-call? .clarity-bitcoin reverse-buff32 (sha256 (sha256 header))))
 )
@@ -56,7 +58,7 @@
     (witness-merkle-root 0x15424423c2614c23aceec8d732b5330c21ff3a306f52243fbeef47a192c65c86)
     (witness-reserved-data 0x0000000000000000000000000000000000000000000000000000000000000000)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
     (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
@@ -88,7 +90,7 @@
     ;; txid: 28f35a9c67a275e1cf8678c3f030f005b4c85ff8fcbf1742035ec39ebbdb5164
     (raw-coinbase-tx 0x01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff1603e319251300000062696e67626f6e67210001000000ffffffff02bbb329000000000017a9148746e880ec2156d6b527e1962456cff7720695df870000000000000000266a24aa21a9edcbc79776b99d0cc0c2d597ce40c92958ba98f3adb6e59ed27c3a03d1c1703e1c00000000)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
     (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height
@@ -120,7 +122,7 @@
     ;; txid: 84f8a86015b0a95763bb16128ff301a60f668356548405178953ab1e4cbff36e
     (raw-coinbase-tx 0x01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff32034f1a2500045684506404c862b40c0c11c14a6400000000000000000a636b706f6f6c0e2f6d696e65642062792072736b2fffffffff0317ea2b00000000001976a914ec2f9ffaba0d68ea6bd7c25cedfe2ae710938e6088ac0000000000000000266a24aa21a9ede2ee16ef0a8c0fd6ccb8c78f297199f0f143629121801c46b1e1487c0123cb4b00000000000000002a6a52534b424c4f434b3acb9b4841f625100fb87055003991835f3183bff7668865e93e1f1118003a492d00000000)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
     (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
@@ -152,7 +154,7 @@
     ;; txid: c770364da721e34eeb1a67f09c986fa5e4f13f9819df727e604691f42f5340a1
     (raw-coinbase-tx 0x02000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2503831a250000000000000000000000000000000002000000000000073c7500000000000000ffffffff02be402500000000001976a91455a2e914aeb9729b4cd265248cb67a865eae95fd88ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf900000000)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
     (match (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
@@ -187,7 +189,7 @@
     ;; txid: e2798f96e3584be98f0b6eb6833dbf8284f95c4bb183f425bf409eb3ecc4bf6b
     (raw-coinbase-tx 0x01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff1b03c917250477664664004000009be40b0000084d617261636f726500000000030000000000000000266a24aa21a9edb675067096401108d0bd081d693fb4adae204ea41a2c444ad79826a2d9f0bb250000000000000000fd80017b226964223a6e756c6c2c22726573756c74223a7b2268617368223a2239346562366639633664633130396239646630396333306237616561613065383538656165626536343831346138363036383962383065633931313634383864222c22636861696e6964223a312c2270726576696f7573626c6f636b68617368223a2232663566306161663139633139623138313433333839663864643330353234323539323937393137613562396330613864353432366362323233373731336364222c22636f696e6261736576616c7565223a3632353030303030302c2262697473223a223230376666666666222c22686569676874223a3437382c225f746172676574223a2230303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030666666663766222c226d65726b6c655f73697a65223a312c226d65726b6c655f6e6f6e6365223a323539363939363136327d2c226572726f72223a6e756c6c7db87a2500000000001976a914bb94b2b8ce1719201bf0346d79ee0f60c9d2700088ac00000000)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
     (match (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
@@ -222,7 +224,7 @@
     (witness-merkle-root 0x15424423c2614c23aceec8d732b5330c21ff3a306f52243fbeef47a192c65c86)
     (witness-reserved-data 0x0000000000000000000000000000000000000000000000000000000000000000)
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
-    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
     (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height
@@ -244,16 +246,16 @@
   (let (
     (segwit-tx 0x020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03016500ffffffff0200f2052a010000002251205444612a122cd09b4b3457d46c149a23d8685fb7d3aac61ea7eee8449555293b0000000000000000266a24aa21a9edab124e70e4a18e72f2ac6f635aebb08862d5b5b1c0519cd9f3222a24a48482560120000000000000000000000000000000000000000000000000000000000000000000000000)
     (non-segwit-tx 0x02000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2503831a250000000000000000000000000000000002000000000000073c7500000000000000ffffffff02be402500000000001976a91455a2e914aeb9729b4cd265248cb67a865eae95fd88ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf900000000)
-    (parsed-tx-with-segwit-function (try! (contract-call? .clarity-bitcoin parse-wtx non-segwit-tx)))
-    (parsed-tx-with-non-segwit-function (try! (contract-call? .clarity-bitcoin parse-tx non-segwit-tx)))
+    (parsed-tx-with-segwit-function (contract-call? .clarity-bitcoin parse-wtx non-segwit-tx false))
+    (parsed-tx-with-non-segwit-function (contract-call? .clarity-bitcoin parse-tx non-segwit-tx))
     (correct-parsed-tx { ins: (list { outpoint: { hash: 0x0000000000000000000000000000000000000000000000000000000000000000, index: u4294967295 }, scriptSig: 0x03831a250000000000000000000000000000000002000000000000073c7500000000000000, sequence: u4294967295 }), locktime: u0, outs: (list { scriptPubKey: 0x76a91455a2e914aeb9729b4cd265248cb67a865eae95fd88ac, value: u2441406 }  { scriptPubKey: 0x6a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9, value: u0 }), version: u2 })
-    (wrong-parsed-tx { ins: (list), locktime: u0, outs: (list), segwit-marker: u1, segwit-version: u0, version: u2, witnesses: (list) })
+    ;;(wrong-parsed-tx { ins: (list), locktime: u0, outs: (list), segwit-marker: u1, segwit-version: u0, version: u2, witnesses: (list) })
   )
     (ok
       (asserts!
         (and
-          (is-eq parsed-tx-with-segwit-function wrong-parsed-tx)
-          (is-eq parsed-tx-with-non-segwit-function correct-parsed-tx)
+          (is-eq parsed-tx-with-segwit-function (err ERR-NOT-SEGWIT-TRANSACTION))
+          (is-eq parsed-tx-with-non-segwit-function (ok correct-parsed-tx))
         )
       (err u1)))
   )
