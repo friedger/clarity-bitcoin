@@ -28,8 +28,10 @@
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint8 (ctx { txbuff: (buff 4096), index: uint}))
+		;; Get data buffer and current index
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
+				;; Read 1 byte as uint8, update index
 				(ok {uint8: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u1)) (err ERR-OUT-OF-BOUNDS)) u1))),
 						 ctx: { txbuff: data, index: (+ u1 base)}})))
 
@@ -37,8 +39,10 @@
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint16 (ctx { txbuff: (buff 4096), index: uint}))
+		;; Get data buffer and current index 
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
+				;; Read 2 bytes as uint16, update index
 				(ok {uint16: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2))),
 						 ctx: { txbuff: data, index: (+ u2 base)}})))
 
@@ -46,8 +50,10 @@
 ;; Returns (ok { uint32: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint32 (ctx { txbuff: (buff 4096), index: uint}))
+		;; Get data buffer and current index
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
+				;; Read 4 bytes as uint32, update index
 				(ok {uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4))),
 						 ctx: { txbuff: data, index: (+ u4 base)}})))
 
@@ -55,8 +61,10 @@
 ;; Returns (ok { uint64: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint64 (ctx { txbuff: (buff 4096), index: uint}))
+		;; Get data buffer and current index
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
+				;; Read 8 bytes as uint64, update index
 				(ok {uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8))),
 						 ctx: { txbuff: data, index: (+ u8 base)}})))
 
@@ -90,11 +98,13 @@
 ;; Returns (ok { varslice: (buff 4096), ctx: { txbuff: (buff 4096), index: uint } }) on success, where varslice has the length of the varint prefix.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-varslice (old-ctx { txbuff: (buff 4096), index: uint}))
+		;;  Read varint length prefix
 		(let ((parsed (try! (read-varint old-ctx)))
 					(ctx (get ctx parsed))
 					(slice-start (get index ctx))
 					(target-index (+ slice-start (get varint parsed)))
 					(txbuff (get txbuff ctx)))
+		 ;; Read varint-length slice, update index
 		 (ok {varslice: (unwrap! (slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS)),
 					ctx: { txbuff: txbuff, index: target-index}})))
 
@@ -165,9 +175,12 @@
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
 (define-read-only (read-txins (ctx { txbuff: (buff 4096), index: uint}))
+		;; Read number of inputs
 		(let ((parsed-num-txins (try! (read-varint ctx)))
 					(num-txins (get varint parsed-num-txins))
 					(new-ctx (get ctx parsed-num-txins)))
+
+		 ;; Loop to read each input 
 		 (if (> num-txins u8)
 				 (err ERR-TOO-MANY-TXINS)
 				 (fold read-next-txin (bool-list-of-len num-txins) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
