@@ -15,11 +15,14 @@
   ERR-PROOF-TOO-SHORT
   ERR-TOO-MANY-WITNESSES
   ERR-INVALID-COMMITMENT 
-  ERR-WITNESS-TX-NOT-IN-COMMITMENT)
+  ERR-WITNESS-TX-NOT-IN-COMMITMENT
+  ERR-TX-TOO-LARGE)
 
 ;;
 ;; Helper functions to parse bitcoin transactions
 ;;
+
+(define-constant MAX_TX_SIZE 4000)
 
 ;; Create a list with n elments `true`. n must be smaller than 9.
 (define-private (bool-list-of-len (n uint))
@@ -304,6 +307,7 @@
 ;; Returns (err ErrorCode.ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
 ;; Returns (err ErrorCode.ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
 (define-read-only (parse-wtx (tx (buff 4096)))
+		(asserts! (<= (buff-len tx) MAX_TX_SIZE) (err ERR-TX-TOO-LARGE))
 		(let ((ctx { txbuff: tx, index: u0})
 					(parsed-version (try! (read-uint32 ctx)))
 					(parsed-segwit-marker (try! (read-uint8 (get ctx parsed-version))))
@@ -348,6 +352,7 @@
 ;; Returns (err ErrorCode.ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
 ;; Returns (err ErrorCode.ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
 (define-read-only (parse-tx (tx (buff 4096)))
+		(asserts! (<= (buff-len tx) MAX_TX_SIZE) (err ERR-TX-TOO-LARGE))
 		(let ((ctx { txbuff: tx, index: u0})
 					(parsed-version (try! (read-uint32 ctx)))
 					(parsed-txins (try! (read-txins (get ctx parsed-version))))
