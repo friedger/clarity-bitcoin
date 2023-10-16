@@ -4,17 +4,18 @@
 ;; version 4 adds support for segwit transactions
 
 ;; Error codes
-(define-constant ERR-OUT-OF-BOUNDS u1)
-(define-constant ERR-TOO-MANY-TXINS u2)
-(define-constant ERR-TOO-MANY-TXOUTS u3)
-(define-constant ERR-VARSLICE-TOO-LONG u4)
-(define-constant ERR-BAD-HEADER u5)
-(define-constant ERR-HEADER-HEIGHT-MISMATCH u6)
-(define-constant ERR-INVALID-MERKLE-PROOF u7)
-(define-constant ERR-PROOF-TOO-SHORT u8)
-(define-constant ERR-TOO-MANY-WITNESSES u9)
-(define-constant ERR-INVALID-COMMITMENT u10)
-(define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
+(define-enum ErrorCode
+  ERR-OUT-OF-BOUNDS
+  ERR-TOO-MANY-TXINS
+  ERR-TOO-MANY-TXOUTS
+  ERR-VARSLICE-TOO-LONG
+  ERR-BAD-HEADER
+  ERR-HEADER-HEIGHT-MISMATCH
+  ERR-INVALID-MERKLE-PROOF
+  ERR-PROOF-TOO-SHORT
+  ERR-TOO-MANY-WITNESSES
+  ERR-INVALID-COMMITMENT 
+  ERR-WITNESS-TX-NOT-IN-COMMITMENT)
 
 ;;
 ;; Helper functions to parse bitcoin transactions
@@ -26,56 +27,56 @@
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint8 (ctx { txbuff: (buff 4096), index: uint}))
 		;; Get data buffer and current index
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
 				;; Read 1 byte as uint8, update index
-				(ok {uint8: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u1)) (err ERR-OUT-OF-BOUNDS)) u1))),
+				(ok {uint8: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u1)) (err ErrorCode.ERR-OUT-OF-BOUNDS)) u1))),
 						 ctx: { txbuff: data, index: (+ u1 base)}})))
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint16 (ctx { txbuff: (buff 4096), index: uint}))
 		;; Get data buffer and current index 
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
 				;; Read 2 bytes as uint16, update index
-				(ok {uint16: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2))),
+				(ok {uint16: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u2)) (err ErrorCode.ERR-OUT-OF-BOUNDS)) u2))),
 						 ctx: { txbuff: data, index: (+ u2 base)}})))
 
 ;; Reads the next four bytes from txbuff as a little-endian 32-bit integer, and updates the index.
 ;; Returns (ok { uint32: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint32 (ctx { txbuff: (buff 4096), index: uint}))
 		;; Get data buffer and current index
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
 				;; Read 4 bytes as uint32, update index
-				(ok {uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4))),
+				(ok {uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ErrorCode.ERR-OUT-OF-BOUNDS)) u4))),
 						 ctx: { txbuff: data, index: (+ u4 base)}})))
 
 ;; Reads the next eight bytes from txbuff as a little-endian 64-bit integer, and updates the index.
 ;; Returns (ok { uint64: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint64 (ctx { txbuff: (buff 4096), index: uint}))
 		;; Get data buffer and current index
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
 				;; Read 8 bytes as uint64, update index
-				(ok {uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8))),
+				(ok {uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ErrorCode.ERR-OUT-OF-BOUNDS)) u8))),
 						 ctx: { txbuff: data, index: (+ u8 base)}})))
 
 ;; Reads the next varint from txbuff, and updates the index.
 ;; Returns (ok { varint: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-varint (ctx { txbuff: (buff 4096), index: uint}))
 		(let ((ptr (get index ctx))
 					(tx (get txbuff ctx))
 					(byte (buff-to-uint-le (unwrap! (element-at tx ptr)
-																	(err ERR-OUT-OF-BOUNDS)))))
+																	(err ErrorCode.ERR-OUT-OF-BOUNDS)))))
 		 (if (<= byte u252)
 				 ;; given byte is the varint
 				 (ok { varint: byte, ctx: { txbuff: tx, index: (+ u1 ptr)}})
@@ -96,7 +97,7 @@
 
 ;; Reads a varint-prefixed byte slice from txbuff, and updates the index to point to the byte after the varint and slice.
 ;; Returns (ok { varslice: (buff 4096), ctx: { txbuff: (buff 4096), index: uint } }) on success, where varslice has the length of the varint prefix.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-varslice (old-ctx { txbuff: (buff 4096), index: uint}))
 		;;  Read varint length prefix
 		(let ((parsed (try! (read-varint old-ctx)))
@@ -105,7 +106,7 @@
 					(target-index (+ slice-start (get varint parsed)))
 					(txbuff (get txbuff ctx)))
 		 ;; Read varint-length slice, update index
-		 (ok {varslice: (unwrap! (slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS)),
+		 (ok {varslice: (unwrap! (slice? txbuff slice-start target-index) (err ErrorCode.ERR-OUT-OF-BOUNDS)),
 					ctx: { txbuff: txbuff, index: target-index}})))
 
 (define-private (reverse-buff16 (input (buff 16)))
@@ -119,14 +120,14 @@
 
 ;; Reads a little-endian hash -- consume the next 32 bytes, and reverse them.
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-hashslice (old-ctx { txbuff: (buff 4096), index: uint}))
 		(let ((slice-start (get index old-ctx))
 					(target-index (+ u32 slice-start))
 					(txbuff (get txbuff old-ctx))
 					(hash-le (unwrap-panic
 											(as-max-len? (unwrap!
-																			(slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS))
+																			(slice? txbuff slice-start target-index) (err ErrorCode.ERR-OUT-OF-BOUNDS))
 											 u32))))
 		 (ok {hashslice: (reverse-buff32 hash-le),
 					ctx: { txbuff: txbuff, index: target-index}})))
@@ -134,9 +135,9 @@
 ;; Inner fold method to read the next tx input from txbuff.
 ;; The index in ctx will be updated to point to the next tx input if all goes well (or to the start of the outputs)
 ;; Returns (ok { ... }) on success.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
 (define-read-only (read-next-txin (ignored bool)
 																	(result (response {ctx: { txbuff: (buff 4096), index: uint },
 																												remaining: uint,
@@ -163,17 +164,17 @@
 																			{   outpoint: {
 																										 hash: (get hashslice parsed-hash),
 																										 index: (get uint32 parsed-index) },
-																					scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ERR-VARSLICE-TOO-LONG)),
+																					scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ErrorCode.ERR-VARSLICE-TOO-LONG)),
 																					sequence: (get uint32 parsed-sequence)})
 															 u8)
-															(err ERR-TOO-MANY-TXINS))}))
+															(err ErrorCode.ERR-TOO-MANY-TXINS))}))
 								(ok state))))
 
 ;; Read a transaction's inputs.
 ;; Returns (ok { txins: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
 (define-read-only (read-txins (ctx { txbuff: (buff 4096), index: uint}))
 		;; Read number of inputs
 		(let ((parsed-num-txins (try! (read-varint ctx)))
@@ -182,14 +183,14 @@
 
 		 ;; Loop to read each input 
 		 (if (> num-txins u8)
-				 (err ERR-TOO-MANY-TXINS)
+				 (err ErrorCode.ERR-TOO-MANY-TXINS)
 				 (fold read-next-txin (bool-list-of-len num-txins) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
 
 ;; Read the next transaction output, and update the index in ctx to point to the next output.
 ;; Returns (ok { ... }) on success
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout (ignored bool)
 																	 (result (response {ctx: { txbuff: (buff 4096), index: uint },
 																											txouts: (list 8 {value: uint,
@@ -204,21 +205,21 @@
 											(as-max-len?
 													(append (get txouts state)
 															{   value: (get uint64 parsed-value),
-																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
+																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ErrorCode.ERR-VARSLICE-TOO-LONG))})
 											u8)
-											(err ERR-TOO-MANY-TXOUTS))})))
+											(err ErrorCode.ERR-TOO-MANY-TXOUTS))})))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
 ;; Returns (ok { txouts: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-txouts (ctx { txbuff: (buff 4096), index: uint}))
 		(let ((parsed-num-txouts (try! (read-varint ctx)))
 					(num-txouts (get varint parsed-num-txouts))
 					(new-ctx (get ctx parsed-num-txouts)))
 		 (if (> num-txouts u8)
-				 (err ERR-TOO-MANY-TXOUTS)
+				 (err ErrorCode.ERR-TOO-MANY-TXOUTS)
 				 (fold read-next-txout (bool-list-of-len num-txouts) (ok { ctx: new-ctx, txouts: (list)})))))
 
 ;; Read the stack item of the witness field, and update the index in ctx to point to the next item.
@@ -232,9 +233,9 @@
 				(ok {ctx: new-ctx,
 						items: (unwrap!
 											(as-max-len?
-													(append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG)))
+													(append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ErrorCode.ERR-VARSLICE-TOO-LONG)))
 											u8)
-											(err ERR-TOO-MANY-WITNESSES))})))
+											(err ErrorCode.ERR-TOO-MANY-WITNESSES))})))
 
 ;; Read the next witness data, and update the index in ctx to point to the next witness.
 (define-read-only (read-next-witness (ignored bool)
@@ -259,9 +260,9 @@
 
 ;; Read all witness data in a transaction.  Update the index to point to the end of the tx, if all goes well.
 ;; Returns (ok {witnesses: (list 8 (list 8 (buff 128))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
-;; Returns (err ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
 (define-read-only (read-witnesses (ctx { txbuff: (buff 4096), index: uint }) (num-txins uint))
 	(fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
 
@@ -298,10 +299,10 @@
 ;;      witnesses: (list 8 (list 8 (buff 128))),
 ;;      locktime: uint
 ;; })
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
-;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
 (define-read-only (parse-wtx (tx (buff 4096)))
 		(let ((ctx { txbuff: tx, index: u0})
 					(parsed-version (try! (read-uint32 ctx)))
@@ -342,10 +343,10 @@
 ;;          }),
 ;;      locktime: uint
 ;; })
-;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
-;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
-;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
-;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
+;; Returns (err ErrorCode.ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ErrorCode.ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
+;; Returns (err ErrorCode.ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
 (define-read-only (parse-tx (tx (buff 4096)))
 		(let ((ctx { txbuff: tx, index: u0})
 					(parsed-version (try! (read-uint32 ctx)))
@@ -438,10 +439,10 @@
 ;; and is thus used to deduce the order in which to hash the intermediate hashes with one another to link the txid to the merkle root.
 ;; Returns (ok true) if the proof is valid.
 ;; Returns (ok false) if the proof is invalid.
-;; Returns (err ERR-PROOF-TOO-SHORT) if the proof's hashes aren't long enough to link the txid to the merkle root.
+;; Returns (err ErrorCode.ERR-PROOF-TOO-SHORT) if the proof's hashes aren't long enough to link the txid to the merkle root.
 (define-read-only (verify-merkle-proof (reversed-txid (buff 32)) (merkle-root (buff 32)) (proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
 		(if (> (get tree-depth proof) (len (get hashes proof)))
-				(err ERR-PROOF-TOO-SHORT)
+				(err ErrorCode.ERR-PROOF-TOO-SHORT)
 				(ok
 					(get verified
 							(fold inner-merkle-proof-verify
@@ -487,11 +488,11 @@
 ;;
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
-;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
+;; Returns (err ErrorCode.ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
 (define-read-only (was-tx-mined-compact (height uint) (tx (buff 4096))
 	(header (buff 80))
 	(proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-		(let ((block (unwrap! (parse-block-header header) (err ERR-BAD-HEADER))))
+		(let ((block (unwrap! (parse-block-header header) (err ErrorCode.ERR-BAD-HEADER))))
 			(was-tx-mined-internal height tx header (get merkle-root block) proof)))
 
 ;; Determine whether or not a Bitcoin transaction was mined in a prior Bitcoin block.
@@ -519,9 +520,9 @@
 				(or
 					(is-eq merkle-root txid) ;; true, if the transaction is the only transaction
 					(try! (verify-merkle-proof reversed-txid (reverse-buff32 merkle-root) proof)))
-				(err ERR-INVALID-MERKLE-PROOF))
+				(err ErrorCode.ERR-INVALID-MERKLE-PROOF))
 			(ok txid))
-		(err ERR-HEADER-HEIGHT-MISMATCH)))
+		(err ErrorCode.ERR-HEADER-HEIGHT-MISMATCH)))
 
 
 ;; Determine whether or not a Bitcoin transaction
@@ -564,8 +565,8 @@
 			(wtxid (reverse-buff32 reversed-wtxid))
 		)
 			;; verify wtxid commitment
-			(asserts! (is-eq witness-out (concat 0x6a24aa21a9ed final-hash)) (err ERR-INVALID-COMMITMENT))
+			(asserts! (is-eq witness-out (concat 0x6a24aa21a9ed final-hash)) (err ErrorCode.ERR-INVALID-COMMITMENT))
 			;; verify witness merkle tree
 			(asserts! (try! (verify-merkle-proof reversed-wtxid witness-merkle-root
-													{ tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
+													{ tx-index: tx-index, hashes: wproof, tree-depth: tree-depth })) (err ErrorCode.ERR-WITNESS-TX-NOT-IN-COMMITMENT))
 			(ok wtxid))))
