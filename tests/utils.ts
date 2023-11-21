@@ -35,6 +35,7 @@ export interface TxObject {
     scriptPubKey: string;
     value: number;
   }[];
+  txid?: string;
 }
 
 export function expectHeaderObject(
@@ -84,5 +85,9 @@ export function expectTxObject(block: any, expectedTxObject: TxObject) {
       hexToBytes(expectedTxObject.outs[index].scriptPubKey)
     );
     outObject.value.expectUint(expectedTxObject.outs[index].value);
+  }
+
+  if (expectedTxObject.txid) {
+    resultTxObject.txid.expectSome().expectBuff(hexToBytes(expectedTxObject.txid));
   }
 }
