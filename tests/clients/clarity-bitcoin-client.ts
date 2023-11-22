@@ -1,23 +1,24 @@
-import { Tx, Account, types } from "../deps.ts";
+import { tx as Tx} from "@hirosystems/clarinet-sdk";
+import { Cl, callReadOnlyFunction } from "@stacks/transactions";
 
 export const Error = {
   ERR_PROOF_TOO_SHORT: 8,
 };
 
-export function parseTx(tx: string, deployer: Account) {
-  return Tx.contractCall("clarity-bitcoin", "parse-tx", [tx], deployer.address);
+export function parseTx(tx: string, deployer: string) {
+  return simnet.callReadOnlyFn("clarity-bitcoin", "parse-tx", [Cl.bufferFromHex(tx)], deployer);
 }
 
-export function parseWtx(wtx: string, calculateTxid: boolean, deployer: Account) {
-  return Tx.contractCall("clarity-bitcoin", "parse-wtx", [wtx, types.bool(calculateTxid)], deployer.address);
+export function parseWtx(wtx: string, calculateTxid: boolean, deployer: string) {
+  return simnet.callReadOnlyFn("clarity-bitcoin", "parse-wtx", [Cl.bufferFromHex(wtx), Cl.bool(calculateTxid)], deployer);
 }
 
-export function parseBlockHeader(headerBuff: Uint8Array, deployer: Account) {
-  return Tx.contractCall(
+export function parseBlockHeader(headerBuff: Uint8Array, deployer: string) {
+  return simnet.callReadOnlyFn(
     "clarity-bitcoin",
     "parse-block-header",
-    [types.buff(headerBuff)],
-    deployer.address
+    [Cl.buffer(headerBuff)],
+    deployer
   );
 }
 
@@ -29,21 +30,21 @@ export function verifyMerkleProof(
     txIndex: number;
     treeDepth: number;
   },
-  deployer: Account
+  deployer: string
 ) {
   const reverseTxId = txId.reverse();
-  return Tx.contractCall(
+  return simnet.callReadOnlyFn(
     "clarity-bitcoin",
     "verify-merkle-proof",
     [
-      types.buff(reverseTxId),
-      types.buff(merkleRoot),
-      types.tuple({
-        hashes: types.list(merkleProof.hashes.map((h) => types.buff(h))),
-        "tx-index": types.uint(merkleProof.txIndex),
-        "tree-depth": types.uint(merkleProof.treeDepth),
+      Cl.buffer(reverseTxId),
+      Cl.buffer(merkleRoot),
+      Cl.tuple({
+        hashes: Cl.list(merkleProof.hashes.map((h) => Cl.buffer(h))),
+        "tx-index": Cl.uint(merkleProof.txIndex),
+        "tree-depth": Cl.uint(merkleProof.treeDepth),
       }),
     ],
-    deployer.address
+    deployer
   );
 }
