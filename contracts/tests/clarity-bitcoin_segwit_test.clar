@@ -61,7 +61,7 @@
     (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
-    (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
+    (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height
       raw-tx
       raw-block-header
@@ -72,7 +72,9 @@
       witness-reserved-data
       raw-coinbase-tx
       (list 0x5f4a8858a112953111d5f94605c4dd8d04690eeeb9ffe2f435475d95943f2f3f 0x3348bf81aae79941662a902206b3ed2d285713668ab134c9e113548daea596fc)
-    )
+    )))
+    (asserts! (is-eq result (ok 0xc62ea13f720175da9c93507db2b586b1d0a84faea386bf448a5bc470c37d1104)) (err "expected txid"))
+    (ok true))
   )
 )
 
@@ -92,7 +94,7 @@
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
     (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
-    (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
+    (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height
       raw-tx
       raw-block-header
@@ -103,10 +105,11 @@
       witness-reserved-data
       raw-coinbase-tx
       (list 0x012e8988aa58e53ac700c22257237716f642aea5ad45c3f6420eb010bf2b37f9 0x10b71df80cc37bd92c746690a980a7f4187e6dbf8b973ac938f1b1b9d1ef25b6 0x897a09fa66156b753366b38236fd40fe7920db114722b3d7762826bf4930750c 0x2cf51c5e81f70b72c37fd8eccd8d3446c7c69c4d568acd23c9949c25bc1d3fb4 0x7d45568289180def6b91cdf6f89c692f3798872948b582a9f6fd5cc471cb67e0 0xe5fefbaf926e706c4ef331d172dcb589dfd6b997bee4ba6ddee4c7c6e2918549 0x097ae87e24dae74bb00a2bfe0aa3c14537ce04b048285ce69d98301bd9ddee8d)
-    )
+    )))
+    (asserts! (is-eq result (ok 0xfea94d1e37eee8642ebbd6f5b43f6d092d9ac197f921f4598117a833dbe55b68)) (err "expected txid"))
+    (ok true))
   )
 )
-
 
 ;; @name verify segwit transaction where OP_RETURN is in output[0]
 ;; arbitrary segwit transaction
@@ -125,7 +128,7 @@
     (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
 
-    (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
+    (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height
       raw-tx
       raw-block-header
@@ -136,7 +139,9 @@
       witness-reserved-data
       raw-coinbase-tx
       (list 0xfc63a531dfb491d91ddf08dfe0d5b2406a97be193ae90fa44e2fca0b8a30d02f 0x33274cc92f8b980272688e01114cc2944fb661d1aa3a658c7d29675a46a4d5ad 0x1172bf0943aad7bc580aaab5f5d356b1c172f11c297ccf0077515309906352f2 0x2af4fd00ac79b65c0c508fbf44c22d1cf5acb084770079a94bd72ac816cfceb8 0xed4ca325a1800f0dfb2ab9d63761ecb358c014424e684c820d0d87ace45474a1 0xd3292e0e550420e500f29663dfc8ef632dbcb119c8a1ddf49aa3d32ecad83084 0x6369b65eea600edbd69b56386be9269f9662ca3f384a0ca21922ac03d2936102)
-    )
+    )))
+    (asserts! (is-eq result (ok 0xbf986c2f7c53f7fc6f87ec605d4e4ff58aa1f4558fa4bfa7bc692d64277168da)) (err "expected txid"))
+    (ok true))
   )
 )
 
@@ -170,7 +175,7 @@
       (list 0x12b32c51b0b4f3e42b234e791e6b851874cbe200aa7729b31f7bb96ee1b9647b)
     )
       ok-res (err u1)
-      err-res (if (is-eq err-res ERR-PROOF-TOO-SHORT) (ok err-res) (err err-res))
+      err-res (if (is-eq err-res ERR-PROOF-TOO-SHORT) (ok true) (err err-res))
     )
   )
 )
@@ -205,7 +210,7 @@
       (list 0x3d52480061d7634fa8060430cf86d8de3f577499a2056f5ff80cc36918a78dcc 0x41dd33b4cffe074cc8263f98da7c81006521eb2cc8712028fa491efed619cffb)
     )
       ok-res (err u1)
-      err-res (if (is-eq err-res ERR-VARSLICE-TOO-LONG) (ok err-res) (err err-res))
+      err-res (if (is-eq err-res ERR-VARSLICE-TOO-LONG) (ok true) (err err-res))
     )
   )
 )
@@ -226,7 +231,7 @@
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
     (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
   )
-    (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
+    (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height
       raw-tx
       raw-block-header
@@ -237,7 +242,9 @@
       witness-reserved-data
       raw-coinbase-tx
       (list 0x5f4a8858a112953111d5f94605c4dd8d04690eeeb9ffe2f435475d95943f2f3f 0x3348bf81aae79941662a902206b3ed2d285713668ab134c9e113548daea596fc)
-    )
+    )))
+    (asserts! (is-eq result (ok 0xc62ea13f720175da9c93507db2b586b1d0a84faea386bf448a5bc470c37d1104)) (err "expected txid"))
+    (ok true))
   )
 )
 
