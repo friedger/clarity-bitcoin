@@ -411,22 +411,19 @@
 ;; * if the ith bit is 0, then cur-hash is hashed before the next proof-hash (cur-hash is "left").
 ;; * if the ith bit is 1, then the next proof-hash is hashed before cur-hash (cur-hash is "right").
 ;; The proof verifies if cur-hash is equal to root-hash, and we're out of proof-hashes to check.
-(define-read-only (inner-merkle-proof-verify (ctr uint) (state { path: uint, root-hash: (buff 32), proof-hashes: (list 14 (buff 32)), tree-depth: uint, cur-hash: (buff 32), verified: bool}))
-		(if (get verified state)
-				state
-				(if (>= ctr (get tree-depth state))
-						(merge state { verified: false})
-						(let ((path (get path state))
-									(is-left (is-bit-set path ctr))
-									(proof-hashes (get proof-hashes state))
-									(cur-hash (get cur-hash state))
-									(root-hash (get root-hash state))
+;; Note, ctr is expected to be < (len proof-hashes), verified can be true only if ctr + 1 == (len proof-hashes).
+(define-private (inner-merkle-proof-verify (ctr uint) (state { path: uint, root-hash: (buff 32), proof-hashes: (list 14 (buff 32)), tree-depth: uint, cur-hash: (buff 32), verified: bool}))
+  (let ((path (get path state))
+        (is-left (is-bit-set path ctr))
+        (proof-hashes (get proof-hashes state))
+        (cur-hash (get cur-hash state))
+        (root-hash (get root-hash state))
 
-									(h1 (if is-left (unwrap-panic (element-at proof-hashes ctr)) cur-hash))
-									(h2 (if is-left cur-hash (unwrap-panic (element-at proof-hashes ctr))))
-									(next-hash (sha256 (sha256 (concat h1 h2))))
-									(is-verified (and (is-eq (+ u1 ctr) (len proof-hashes)) (is-eq next-hash root-hash))))
-						 (merge state { cur-hash: next-hash, verified: is-verified})))))
+        (h1 (if is-left (unwrap-panic (element-at proof-hashes ctr)) cur-hash))
+        (h2 (if is-left cur-hash (unwrap-panic (element-at proof-hashes ctr))))
+        (next-hash (sha256 (sha256 (concat h1 h2))))
+        (is-verified (and (is-eq (+ u1 ctr) (len proof-hashes)) (is-eq next-hash root-hash))))
+    (merge state { cur-hash: next-hash, verified: is-verified})))
 
 ;; Verify a Merkle proof, given the _reversed_ txid of a transaction, the merkle root of its block, and a proof consisting of:
 ;; * The index in the block where the transaction can be found (starting from 0),
