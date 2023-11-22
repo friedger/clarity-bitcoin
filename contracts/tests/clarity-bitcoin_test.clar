@@ -183,6 +183,60 @@
   )
 )
 
+;; @name verify segwit transaction where merkle proof is wrong
+;; arbitrary segwit transaction
+(define-public (test-was-tx-mined-internal-7)
+  (let (
+    (burnchain-block-height u2431087)
+    (txid 0x3b3a7a31c949048fabf759e670a55ffd5b9472a12e748b684db5d264b6852084)
+    (raw-tx 0x020000000218f905443202116524547142bd55b69335dfc4e4c66ff3afaaaab6267b557c4b030000000000000000e0dbdf1039321ab7a2626ca5458e766c6107690b1a1923e075c4f691cc4928ac0000000000000000000220a10700000000002200208730dbfaa29c49f00312812aa12a62335113909711deb8da5ecedd14688188363c5f26010000000022512036f4ff452cb82e505436e73d0a8b630041b71e037e5997290ba1fe0ae7f4d8d56d182500)
+    ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
+    (raw-block-header 0x0000a02065bc9201b5b5a1d695a18e4d5efe5d52d8ccc4129a2499141d000000000000009160ba7ae5f29f9632dc0cd89f466ee64e2dddfde737a40808ddc147cd82406f18b8486488a127199842cec7)
+    (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-tx raw-tx))
+  )
+    ;; prepare
+
+    (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
+      burnchain-block-height
+      raw-tx
+      raw-block-header
+      {tx-index: u3,
+      tree-depth: u2,
+      hashes: (list 0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8 0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8)}
+    )))
+    (asserts! (is-eq result (err ERR-INVALID-MERKLE-PROOF)) (err "expected ERR-INVALID-MERKLE-PROOF"))
+    (ok true))
+  )
+)
+
+
+;; @name verify segwit transaction with left over data
+(define-public (test-parse-tx)
+  (let (
+    (burnchain-block-height u2431087)
+    ;; 0x3b3a7a31c949048fabf759e670a55ffd5b9472a12e748b684db5d264b6852084 + 0xffffff
+    (raw-tx 0x020000000218f905443202116524547142bd55b69335dfc4e4c66ff3afaaaab6267b557c4b030000000000000000e0dbdf1039321ab7a2626ca5458e766c6107690b1a1923e075c4f691cc4928ac0000000000000000000220a10700000000002200208730dbfaa29c49f00312812aa12a62335113909711deb8da5ecedd14688188363c5f26010000000022512036f4ff452cb82e505436e73d0a8b630041b71e037e5997290ba1fe0ae7f4d8d56d182500ffffff)
+    ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
+  )
+    (let ((result (contract-call? .clarity-bitcoin parse-tx raw-tx)))
+    (asserts! (is-eq result (err ERR-LEFTOVER-DATA)) (err "expected ERR-LEFTOVER-DATA"))
+    (ok true))
+  )
+)
+
+;; @name verify block header with invalid block
+(define-public (test-verify-block-header)
+ (let (
+    (burnchain-block-height u0)
+    ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
+    (raw-block-header 0x0000a02065bc9201b5b5a1d695a18e4d5efe5d52d8ccc4129a2499141d000000000000009160ba7ae5f29f9632dc0cd89f466ee64e2dddfde737a40808ddc147cd82406f18b8486488a127199842cec7)
+  )
+    (let ((result (contract-call? .clarity-bitcoin verify-block-header raw-block-header burnchain-block-height)))
+    (asserts! (is-eq result false) (err "expected invalid block header"))
+    (ok true))
+  )
+)
 
 ;; @name verify transaction with header object
 (define-public (test-was-tx-mined-with-header-object-1)

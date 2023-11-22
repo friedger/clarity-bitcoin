@@ -8,7 +8,6 @@ import {
 import { ResponseCV } from "@stacks/transactions";
 
 const accounts = simnet.getAccounts();
-const chain = simnet;
 
 describe("Parse bitcoin txs with whitness data", () => {
   it("Ensure that segwit bitcoin txs can be parsed", () => {
