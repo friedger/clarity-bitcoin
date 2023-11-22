@@ -104,8 +104,7 @@
 (define-read-only (reverse-buff32 (input (buff 32)))
 	(unwrap-panic (as-max-len? (concat
 		(reverse-buff16 (unwrap-panic (as-max-len? (unwrap-panic (slice? input u16 u32)) u16)))
-		(reverse-buff16 (unwrap-panic (as-max-len? (unwrap-panic (slice? input u0 u16)) u16)))
-	) u32)))
+		(reverse-buff16 (unwrap-panic (as-max-len? (unwrap-panic (slice? input u0 u16)) u16)))) u32)))
 
 ;; Reads a little-endian hash -- consume the next 32 bytes, and reverse them.
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index.
@@ -116,8 +115,7 @@
 					(txbuff (get txbuff old-ctx))
 					(hash-le (unwrap-panic
 											(as-max-len? (unwrap!
-																			(slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS))
-											 u32))))
+																			(slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS)) u32))))
 		 (ok {hashslice: (reverse-buff32 hash-le),
 					ctx: { txbuff: txbuff, index: target-index}})))
 
@@ -137,27 +135,24 @@
 																																				sequence: uint})}
 																							uint)))
 		(let ((state (unwrap! result result)))
-						(if (< u0 (get remaining state))
-								(let ((remaining (get remaining state))
-											(ctx (get ctx state))
-											(parsed-hash (try! (read-hashslice ctx)))
-											(parsed-index (try! (read-uint32 (get ctx parsed-hash))))
-											(parsed-scriptSig (try! (read-varslice (get ctx parsed-index))))
-											(parsed-sequence (try! (read-uint32 (get ctx parsed-scriptSig))))
-											(new-ctx (get ctx parsed-sequence)))
-								 (ok {ctx: new-ctx,
-											remaining: (- remaining u1),
-											txins: (unwrap!
-															(as-max-len?
-																	(append (get txins state)
-																			{   outpoint: {
-																										 hash: (get hashslice parsed-hash),
-																										 index: (get uint32 parsed-index) },
-																					scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ERR-VARSLICE-TOO-LONG)),
-																					sequence: (get uint32 parsed-sequence)})
-															 u8)
-															(err ERR-TOO-MANY-TXINS))}))
-								(ok state))))
+							(let ((remaining (get remaining state))
+										(ctx (get ctx state))
+										(parsed-hash (try! (read-hashslice ctx)))
+										(parsed-index (try! (read-uint32 (get ctx parsed-hash))))
+										(parsed-scriptSig (try! (read-varslice (get ctx parsed-index))))
+										(parsed-sequence (try! (read-uint32 (get ctx parsed-scriptSig))))
+										(new-ctx (get ctx parsed-sequence)))
+								(ok {ctx: new-ctx,
+										remaining: (- remaining u1),
+										txins: (unwrap!
+														(as-max-len?
+																(append (get txins state) {   outpoint: {
+																										hash: (get hashslice parsed-hash),
+																										index: (get uint32 parsed-index) },
+																				scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ERR-VARSLICE-TOO-LONG)),
+																				sequence: (get uint32 parsed-sequence)}) u8)
+														(err ERR-TOO-MANY-TXINS))}))
+							))
 
 ;; Read a transaction's inputs.
 ;; Returns (ok { txins: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
@@ -191,8 +186,7 @@
 											(as-max-len?
 													(append (get txouts state)
 															{   value: (get uint64 parsed-value),
-																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))})
-											u8)
+																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))}) u8)
 											(err ERR-TOO-MANY-TXOUTS))})))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
@@ -219,8 +213,7 @@
 				(ok {ctx: new-ctx,
 						items: (unwrap!
 											(as-max-len?
-													(append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG)))
-											u8)
+													(append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG))) u8)
 											(err ERR-TOO-MANY-WITNESSES))})))
 
 ;; Read the next witness data, and update the index in ctx to point to the next witness.
@@ -251,15 +244,6 @@
 ;; Returns (err ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
 (define-read-only (read-witnesses (ctx { txbuff: (buff 4096), index: uint }) (num-txins uint))
 	(fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
-
-;;
-;; Helper functions for smart contract that want to use information of a Bitcoin transaction
-;;
-
-;; Check whether the transaction has witness data or not
-;; Returns true if marker/txin counter is 0x00, false otherwise.
-(define-read-only (has-witness-data (tx (buff 4096)))
-	(is-eq (element-at? tx u4) (some 0x00)))
 
 ;;
 ;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
@@ -354,6 +338,8 @@
 			(parsed-txins (try! (read-txins (get ctx parsed-version))))
 			(parsed-txouts (try! (read-txouts (get ctx parsed-txins))))
 			(parsed-locktime (try! (read-uint32 (get ctx parsed-txouts)))))
+		;; check if it is a non-segwit transaction?
+		;; at least check what happens
 		(asserts! (is-eq (len tx) (get index (get ctx parsed-locktime))) (err ERR-LEFTOVER-DATA))
 		(ok {version: (get uint32 parsed-version),
 			ins: (get txins parsed-txins),
