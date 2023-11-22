@@ -35,9 +35,6 @@
     (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
     (parsed-tx (contract-call? .clarity-bitcoin parse-tx raw-tx))
   )
-    ;; prepare
-    ;; (unwrap-panic (add-burnchain-block-header-hash burnchain-block-height raw-block-header))
-
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
       burnchain-block-height
       raw-tx
@@ -46,7 +43,7 @@
       tree-depth: u2,
       hashes: (list 0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8 0xc4e620f495d8a30d8d919fc148fe55c8873b4aefe43116bc6ef895aa51572215)}
     )))
-  (asserts! (is-eq result (ok txid)) (err "expected txid"))
+    (asserts! (is-eq result (ok txid)) (err "expected txid"))
     (ok true))
   )
 )
@@ -73,7 +70,7 @@
       tree-depth: u7,
       hashes: (list 0xbcbc1fe72ca5d67f74099ac4f851cd6a266d2a42fa6c9a6244b11adf6a2f13fb 0x4348ff70e7b2132e0b6044f960ec25a5f7966f5d6182827c9359039a7654218e 0x6fed856ef1075c15a1318eeb512349ceb6a5115953990369c9cb03d65a550468 0xfcaccdf24d540b6ec02568efaefc5df5b04e249ecaaf95a9170c9b72e7b8f46d 0x7d45568289180def6b91cdf6f89c692f3798872948b582a9f6fd5cc471cb67e0 0xe5fefbaf926e706c4ef331d172dcb589dfd6b997bee4ba6ddee4c7c6e2918549 0x097ae87e24dae74bb00a2bfe0aa3c14537ce04b048285ce69d98301bd9ddee8d)}
     )))
- (asserts! (is-eq result (ok txid)) (err "expected txid"))
+    (asserts! (is-eq result (ok txid)) (err "expected txid"))
     (ok true))
   )
 )
@@ -101,7 +98,7 @@
       tree-depth: u7,
       hashes: (list 0x6ef3bf4c1eab5389170584545683660fa601f38f1216bb6357a9b01560a8f884 0x33274cc92f8b980272688e01114cc2944fb661d1aa3a658c7d29675a46a4d5ad 0x1172bf0943aad7bc580aaab5f5d356b1c172f11c297ccf0077515309906352f2 0x2af4fd00ac79b65c0c508fbf44c22d1cf5acb084770079a94bd72ac816cfceb8 0xed4ca325a1800f0dfb2ab9d63761ecb358c014424e684c820d0d87ace45474a1 0xd3292e0e550420e500f29663dfc8ef632dbcb119c8a1ddf49aa3d32ecad83084 0x6369b65eea600edbd69b56386be9269f9662ca3f384a0ca21922ac03d2936102)}
     )))
-  (asserts! (is-eq result (ok txid)) (err "expected txid"))
+    (asserts! (is-eq result (ok txid)) (err "expected txid"))
     (ok true))
   )
 )
@@ -126,7 +123,7 @@
           tree-depth: u1,
           hashes: (list)}
         )))
-  (asserts! (is-eq result (ok txid)) (err "expected txid"))
+    (asserts! (is-eq result (ok txid)) (err "expected txid"))
     (ok true))
   )
 )
@@ -186,6 +183,73 @@
   )
 )
 
+
+;; @name verify transaction with header object
+(define-public (test-was-tx-mined-with-header-object-1)
+  (let (
+    (burnchain-block-height u2431087)
+    (txid 0x3b3a7a31c949048fabf759e670a55ffd5b9472a12e748b684db5d264b6852084)
+    (raw-tx 0x020000000218f905443202116524547142bd55b69335dfc4e4c66ff3afaaaab6267b557c4b030000000000000000e0dbdf1039321ab7a2626ca5458e766c6107690b1a1923e075c4f691cc4928ac0000000000000000000220a10700000000002200208730dbfaa29c49f00312812aa12a62335113909711deb8da5ecedd14688188363c5f26010000000022512036f4ff452cb82e505436e73d0a8b630041b71e037e5997290ba1fe0ae7f4d8d56d182500)
+    ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
+    (raw-block-header 0x0000a02065bc9201b5b5a1d695a18e4d5efe5d52d8ccc4129a2499141d000000000000009160ba7ae5f29f9632dc0cd89f466ee64e2dddfde737a40808ddc147cd82406f18b8486488a127199842cec7)
+    (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-tx raw-tx))
+  )
+    ;; prepare
+
+    (let ((result (contract-call? .clarity-bitcoin was-tx-mined
+      burnchain-block-height
+      raw-tx
+      {merkle-root: 0x9160ba7ae5f29f9632dc0cd89f466ee64e2dddfde737a40808ddc147cd82406f,
+       version: 0x0000a020,
+       nbits: 0x88a12719,
+       nonce: 0x9842cec7,
+       timestamp: 0x18b84864,
+       parent: 0x65bc9201b5b5a1d695a18e4d5efe5d52d8ccc4129a2499141d00000000000000,
+      }
+      {tx-index: u3,
+      tree-depth: u2,
+      hashes: (list 0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8 0xc4e620f495d8a30d8d919fc148fe55c8873b4aefe43116bc6ef895aa51572215)}
+    )))
+    (asserts! (is-eq result (ok txid)) (err "expected txid"))
+    (ok true))
+  )
+)
+
+
+;; @name verify transaction with header object but wrong version
+(define-public (test-was-tx-mined-with-header-object-2)
+  (let (
+    (burnchain-block-height u2431087)
+    (txid 0x3b3a7a31c949048fabf759e670a55ffd5b9472a12e748b684db5d264b6852084)
+    (raw-tx 0x020000000218f905443202116524547142bd55b69335dfc4e4c66ff3afaaaab6267b557c4b030000000000000000e0dbdf1039321ab7a2626ca5458e766c6107690b1a1923e075c4f691cc4928ac0000000000000000000220a10700000000002200208730dbfaa29c49f00312812aa12a62335113909711deb8da5ecedd14688188363c5f26010000000022512036f4ff452cb82e505436e73d0a8b630041b71e037e5997290ba1fe0ae7f4d8d56d182500)
+    ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
+    (raw-block-header 0x0000a02065bc9201b5b5a1d695a18e4d5efe5d52d8ccc4129a2499141d000000000000009160ba7ae5f29f9632dc0cd89f466ee64e2dddfde737a40808ddc147cd82406f18b8486488a127199842cec7)
+    (parsed-block-header (contract-call? .clarity-bitcoin parse-block-header raw-block-header))
+    (parsed-tx (contract-call? .clarity-bitcoin parse-tx raw-tx))
+  )
+    ;; prepare
+
+    (let ((result (contract-call? .clarity-bitcoin was-tx-mined
+      burnchain-block-height
+      raw-tx
+      {merkle-root: 0x9160ba7ae5f29f9632dc0cd89f466ee64e2dddfde737a40808ddc147cd82406f,
+       version: 0x00000000,
+       nbits: 0x88a12719,
+       nonce: 0x9842cec7,
+       timestamp: 0x18b84864,
+       parent: 0x65bc9201b5b5a1d695a18e4d5efe5d52d8ccc4129a2499141d00000000000000,
+      }
+      {tx-index: u3,
+      tree-depth: u2,
+      hashes: (list 0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8 0xc4e620f495d8a30d8d919fc148fe55c8873b4aefe43116bc6ef895aa51572215)}
+    )))
+    (asserts! (is-eq result (err ERR-HEADER-HEIGHT-MISMATCH)) (err "expected ERR-HEADER-HEIGHT-MISMATCH"))
+    (ok true))
+  )
+)
+
+
 (define-constant ERR-OUT-OF-BOUNDS u1)
 (define-constant ERR-TOO-MANY-TXINS u2)
 (define-constant ERR-TOO-MANY-TXOUTS u3)
@@ -197,3 +261,4 @@
 (define-constant ERR-TOO-MANY-WITNESSES u9)
 (define-constant ERR-INVALID-COMMITMENT u10)
 (define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
+(define-constant ERR-LEFTOVER-DATA u13)

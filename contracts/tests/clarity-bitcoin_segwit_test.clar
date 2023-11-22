@@ -1,8 +1,6 @@
 (define-constant test-contract-principal (as-contract tx-sender))
 (define-constant zero-address 'SP000000000000000000002Q6VF78)
 
-(define-constant ERR-NOT-SEGWIT-TRANSACTION u12)
-
 (define-public (add-burnchain-block-header-hash (burn-height uint) (header (buff 80)))
   (contract-call? .clarity-bitcoin mock-add-burnchain-block-header-hash burn-height (contract-call? .clarity-bitcoin reverse-buff32 (sha256 (sha256 header))))
 )
@@ -280,3 +278,4 @@
 (define-constant ERR-TOO-MANY-WITNESSES u9)
 (define-constant ERR-INVALID-COMMITMENT u10)
 (define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
+(define-constant ERR-NOT-SEGWIT-TRANSACTION u12)
