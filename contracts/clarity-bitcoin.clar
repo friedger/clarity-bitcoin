@@ -1,6 +1,8 @@
 ;; @contract stateless contract to verify bitcoin transaction
 ;; @version 5
 
+;; version 5 adds support for txid generation and improves security
+
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
 (define-constant ERR-TOO-MANY-TXINS u2)
