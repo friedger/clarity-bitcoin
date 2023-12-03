@@ -45,11 +45,6 @@ path = 'contracts/tests/clarity-bitcoin-helper_test.clar'
 clarity_version = 2
 epoch = 2.1
 
-[contracts.send-to-first-input]
-path = 'contracts/examples/send-to-first-input.clar'
-clarity_version = 2
-epoch = 2.1
-
 [contracts.send-to-first-input-compact]
 path = 'contracts/examples/send-to-first-input-compact.clar'
 clarity_version = 2

@@ -1,6 +1,8 @@
 ;; @contract stateless contract to verify bitcoin transaction
 ;; @version 5
 
+;; version 5 adds support for txid generation and improves security
+
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
 (define-constant ERR-TOO-MANY-TXINS u2)
@@ -489,17 +491,6 @@
 	(proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
 		(let ((block (unwrap! (parse-block-header header) (err ERR-BAD-HEADER))))
 			(was-tx-mined-internal height tx header (get merkle-root block) proof)))
-
-;; Determine whether or not a Bitcoin transaction was mined in a prior Bitcoin block.
-;; with the given header object and merkle proof.
-;; Returns (ok txid) if tx was mined else
-;;   returns (err u1) if the header is invalid or
-;;   returns (err u2) if the proof is invalid.
-(define-read-only (was-tx-mined (height uint) (tx (buff 4096))
-	(header { version: (buff 4), parent: (buff 32), merkle-root: (buff 32), timestamp: (buff 4), nbits: (buff 4), nonce: (buff 4) })
-	(proof { tx-index: uint, hashes: (list 14 (buff 32)), tree-depth: uint}))
-		(was-tx-mined-internal height tx (contract-call? .clarity-bitcoin-helper concat-header header) (reverse-buff32 (get merkle-root header)) proof))
-
 
 ;; Private function to verify block header and merkle proof.
 ;; This function must only be called with the merkle root of the provided header.
