@@ -1,3 +1,15 @@
+import { ParsedTransactionResult } from "@hirosystems/clarinet-sdk";
+import {
+  Cl,
+  ClarityType,
+  ClarityValue,
+  ListCV,
+  ResponseCV,
+  ResponseOkCV,
+  TupleCV,
+} from "@stacks/transactions";
+import { expect } from "vitest";
+
 export function hexToBytes(hexString: string) {
   if (hexString) {
     return Uint8Array.from(
@@ -35,10 +47,11 @@ export interface TxObject {
     scriptPubKey: string;
     value: number;
   }[];
+  txid?: string;
 }
 
 export function expectHeaderObject(
-  block: any,
+  result: ClarityValue,
   expectedHeaderObject: {
     version: number;
     parent: string;
@@ -48,41 +61,48 @@ export function expectHeaderObject(
     nonce: number;
   }
 ) {
-  const headerObject = block.receipts[0].result.expectOk().expectTuple();
-  headerObject.version.expectUint(expectedHeaderObject.version);
-  headerObject.parent.expectBuff(hexToBytes(expectedHeaderObject.parent));
-  headerObject["merkle-root"].expectBuff(
-    hexToBytes(expectedHeaderObject.merkleRoot)
+  expect(result).toBeOk(
+    Cl.tuple({
+      version: Cl.uint(expectedHeaderObject.version),
+      parent: Cl.buffer(hexToBytes(expectedHeaderObject.parent)),
+      "merkle-root": Cl.buffer(hexToBytes(expectedHeaderObject.merkleRoot)),
+      timestamp: Cl.uint(expectedHeaderObject.timestamp),
+      nbits: Cl.uint(expectedHeaderObject.nbits),
+      nonce: Cl.uint(expectedHeaderObject.nonce),
+    })
   );
-  headerObject.timestamp.expectUint(expectedHeaderObject.timestamp);
-  headerObject.nbits.expectUint(expectedHeaderObject.nbits);
-  headerObject.nonce.expectUint(expectedHeaderObject.nonce);
 }
 
-export function expectTxObject(block: any, expectedTxObject: TxObject) {
-  const resultTxObject = block.receipts[0].result.expectOk().expectTuple();
-  resultTxObject.version.expectUint(expectedTxObject.version);
-  resultTxObject.locktime.expectUint(expectedTxObject.locktime);
+export function expectTxObject(result: ResponseCV, expectedTxObject: TxObject) {
+  expect(result.type).toBe(ClarityType.ResponseOk);
+  const resultTxObject = (result.value as TupleCV).data;
+
+  expect(resultTxObject.version).toBeUint(expectedTxObject.version);
+  expect(resultTxObject.locktime).toBeUint(expectedTxObject.locktime);
 
   for (let index = 0; index < expectedTxObject.ins.length; index++) {
-    const insObject = resultTxObject.ins.expectList()[index].expectTuple();
-    const outpoint = insObject.outpoint.expectTuple();
-    outpoint.hash.expectBuff(
-      hexToBytes(expectedTxObject.ins[index].outpoint.hash)
-    );
-    outpoint.index.expectUint(expectedTxObject.ins[index].outpoint.index);
-
-    insObject.scriptSig.expectBuff(
-      hexToBytes(expectedTxObject.ins[index].scriptSig)
-    );
-    insObject.sequence.expectUint(expectedTxObject.ins[index].sequence);
+    expect((resultTxObject.ins as ListCV).list[index]).toBeTuple({
+      outpoint: Cl.tuple({
+        hash: Cl.buffer(hexToBytes(expectedTxObject.ins[index].outpoint.hash)),
+        index: Cl.uint(expectedTxObject.ins[index].outpoint.index),
+      }),
+      scriptSig: Cl.buffer(hexToBytes(expectedTxObject.ins[index].scriptSig)),
+      sequence: Cl.uint(expectedTxObject.ins[index].sequence),
+    });
   }
 
   for (let index = 0; index < expectedTxObject.outs.length; index++) {
-    const outObject = resultTxObject.outs.expectList()[index].expectTuple();
-    outObject.scriptPubKey.expectBuff(
-      hexToBytes(expectedTxObject.outs[index].scriptPubKey)
+    expect((resultTxObject.outs as ListCV).list[index]).toBeTuple({
+      scriptPubKey: Cl.buffer(
+        hexToBytes(expectedTxObject.outs[index].scriptPubKey)
+      ),
+      value: Cl.uint(expectedTxObject.outs[index].value),
+    });
+  }
+
+  if (expectedTxObject.txid) {
+    expect(resultTxObject.txid).toBeSome(
+      Cl.buffer(hexToBytes(expectedTxObject.txid))
     );
-    outObject.value.expectUint(expectedTxObject.outs[index].value);
   }
 }

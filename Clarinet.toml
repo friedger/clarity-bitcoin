@@ -5,7 +5,6 @@ authors = []
 telemetry = true
 cache_dir = './.cache'
 requirements = []
-
 [contracts.clarity-bitcoin]
 path = 'contracts/clarity-bitcoin.clar'
 clarity_version = 2
@@ -16,13 +15,33 @@ path = 'contracts/clarity-bitcoin-helper.clar'
 clarity_version = 2
 epoch = 2.1
 
+[contracts.clarity-bitcoin-v5]
+path = 'contracts/clarity-bitcoin-v5.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.clarity-bitcoin_segwit_test]
+path = 'contracts/tests/clarity-bitcoin_segwit_test.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.clarity-bitcoin_test]
+path = 'contracts/tests/clarity-bitcoin_test.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.clarity-bitcoin-read_test]
+path = 'contracts/tests/clarity-bitcoin-read_test.clar'
+clarity_version = 2
+epoch = 2.1
+
 [contracts.helper]
 path = 'contracts/helper.clar'
 clarity_version = 2
 epoch = 2.1
 
-[contracts.send-to-first-input]
-path = 'contracts/examples/send-to-first-input.clar'
+[contracts.clarity-bitcoin-helper_test]
+path = 'contracts/tests/clarity-bitcoin-helper_test.clar'
 clarity_version = 2
 epoch = 2.1
 
@@ -40,18 +59,6 @@ epoch = 2.1
 path = 'contracts/stx-oracle.clar'
 clarity_version = 2
 epoch = 2.1
-
-
-[contracts.clarity-bitcoin_test]
-path = 'contracts/tests/clarity-bitcoin_test.clar'
-clarity_version = 2
-epoch = 2.1
-
-[contracts.clarity-bitcoin_segwit_test]
-path = 'contracts/tests/clarity-bitcoin_segwit_test.clar'
-clarity_version = 2
-epoch = 2.1
-
 [repl.analysis]
 passes = ['check_checker']
 

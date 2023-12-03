@@ -7,3 +7,13 @@ contracts/clarity-bitcoin-v2.clar
 
 .test
 .coverage
+
+# Ignore Node and NPM files. Added by the clarinet-sdk migration.
+logs
+*.log
+npm-debug.log*
+coverage
+*.info
+costs-reports.json
+node_modules
+.DS_Store
