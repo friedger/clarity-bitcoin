@@ -69,7 +69,7 @@ describe("Bitcoin library", () => {
       );
     } catch (e: any) {
       expect(e.toString()).toBe(
-        'Contract call error: clarity-bitcoin::reverse-buff32(0x01) -> Runtime Error: Runtime error while interpreting ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.contract-call: Runtime(UnwrapFailure, Some([FunctionIdentifier { identifier: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin:reverse-buff32" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:special_concat" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:native_unwrap" }]))'
+        'Call contract function error: clarity-bitcoin::reverse-buff32(0x01) -> Error calling contract function: Runtime error while interpreting ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin: Runtime(UnwrapFailure, Some([FunctionIdentifier { identifier: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin:reverse-buff32" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:special_concat" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:native_unwrap" }]))'
       );
     }
   });
