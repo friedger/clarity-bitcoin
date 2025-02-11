@@ -1,11 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { hexToBytes, expectHeaderObject, expectTxObject } from "./utils.ts";
-import {
-  parseTx,
-  parseBlockHeader,
-  parseWtx,
-} from "./clients/clarity-bitcoin-client.ts";
 import { ResponseCV } from "@stacks/transactions";
+import { describe, it } from "vitest";
+import { parseWtx } from "./clients/clarity-bitcoin-client.ts";
+import { expectTxObject } from "./utils.ts";
 
 const accounts = simnet.getAccounts();
 

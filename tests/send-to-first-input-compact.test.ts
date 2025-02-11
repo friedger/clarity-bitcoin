@@ -1,7 +1,7 @@
+import { tx as Tx } from "@hirosystems/clarinet-sdk";
+import { Cl, principalCV } from "@stacks/transactions";
 import { describe, expect, it } from "vitest";
 import { hexToBytes } from "./utils.ts";
-import { Cl, makeContractCall, principalCV } from "@stacks/transactions";
-import { tx as Tx } from "@hirosystems/clarinet-sdk";
 
 const accounts = simnet.getAccounts();
 const chain = simnet;
@@ -21,7 +21,7 @@ describe("Send to first input compact", () => {
     );
 
     expect(response.result).toBeSome(
-      principalCV("ST2X7X1A0649S3BJR0DEB58NQ73E24FVWPPVK11WA")
+      principalCV("SP2X7X1A0649S3BJR0DEB58NQ73E24FVWPMNXGRAJ")
     );
   });
 

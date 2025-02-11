@@ -1,8 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { hexToBytes } from "./utils.ts";
-import { tx as Tx } from "@hirosystems/clarinet-sdk";
-import { verifyMerkleProof, Error } from "./clients/clarity-bitcoin-client.ts";
 import { Cl } from "@stacks/transactions";
+import { describe, expect, it } from "vitest";
+import { Error, verifyMerkleProof } from "./clients/clarity-bitcoin-client.ts";
+import { hexToBytes } from "./utils.ts";
 const accounts = simnet.getAccounts();
 const chain = simnet;
 

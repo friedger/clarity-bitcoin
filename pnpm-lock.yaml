@@ -9,10 +9,13 @@ importers:
   .:
     dependencies:
       '@hirosystems/clarinet-sdk':
-        specifier: 2.13.0-beta8
-        version: 2.13.0-beta8(@types/node@22.12.0)
+        specifier: 2.13.0-beta17
+        version: 2.13.0-beta17(@types/node@22.12.0)
+      '@hirosystems/clarinet-sdk-wasm':
+        specifier: 2.13.0-beta17
+        version: 2.13.0-beta17
       '@stacks/transactions':
-        specifier: ^6.9.0
+        specifier: ^6.12.0
         version: 6.17.0
       chokidar-cli:
         specifier: ^3.0.0
@@ -27,8 +30,8 @@ importers:
         specifier: ^1.3.1
         version: 1.6.0(@types/node@22.12.0)
       vitest-environment-clarinet:
-        specifier: ^2.0.0
-        version: 2.1.0(@hirosystems/clarinet-sdk@2.13.0-beta8(@types/node@22.12.0))(vitest@1.6.0(@types/node@22.12.0))
+        specifier: ^2.1.0
+        version: 2.1.0(@hirosystems/clarinet-sdk@2.13.0-beta17(@types/node@22.12.0))(vitest@1.6.0(@types/node@22.12.0))
 
 packages:
 
@@ -170,11 +173,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@hirosystems/clarinet-sdk-wasm@2.13.0-beta8':
-    resolution: {integrity: sha512-S+S3kQBojj6bPcp3wujseOXYaKiSJpt+4IUHixqOzCCtf8A8QdYDTGXNNLn7f9k28MEMG4cLXLWqiR7iuw12qg==}
+  '@hirosystems/clarinet-sdk-wasm@2.13.0-beta17':
+    resolution: {integrity: sha512-6ZUDyy1fy1KeCNqf0mgQVE6LHn1MASHTJF2RYwT5+hsG7aDTzyIZfKUKyverNSaSoEO/qaE404uNry4lGMtQGA==}
 
-  '@hirosystems/clarinet-sdk@2.13.0-beta8':
-    resolution: {integrity: sha512-sP26zOQfOcO1hrvWi8xjyyv9MjM/cLuGXARt+yKYvwopGuzo8wBf7Xb401PrNM7iwRGP31zedMr2IfBi4XcAsw==}
+  '@hirosystems/clarinet-sdk@2.13.0-beta17':
+    resolution: {integrity: sha512-hqE1ybRmtmJh52IGL2qeP0df6NORmRFGhjyQL95dj5wq+ex+ugDBA8bHf3jI70SlHRwd5CdW8+Snp/hdjAeamg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -1150,13 +1153,13 @@ snapshots:
   '@esbuild/win32-x64@0.21.5':
     optional: true
 
-  '@hirosystems/clarinet-sdk-wasm@2.13.0-beta8':
+  '@hirosystems/clarinet-sdk-wasm@2.13.0-beta17':
     dependencies:
       sync-request: 6.1.0
 
-  '@hirosystems/clarinet-sdk@2.13.0-beta8(@types/node@22.12.0)':
+  '@hirosystems/clarinet-sdk@2.13.0-beta17(@types/node@22.12.0)':
     dependencies:
-      '@hirosystems/clarinet-sdk-wasm': 2.13.0-beta8
+      '@hirosystems/clarinet-sdk-wasm': 2.13.0-beta17
       '@stacks/transactions': 6.17.0
       kolorist: 1.8.0
       prompts: 2.4.2
@@ -1277,13 +1280,13 @@ snapshots:
 
   '@types/concat-stream@1.6.1':
     dependencies:
-      '@types/node': 8.10.66
+      '@types/node': 22.12.0
 
   '@types/estree@1.0.6': {}
 
   '@types/form-data@0.0.33':
     dependencies:
-      '@types/node': 8.10.66
+      '@types/node': 22.12.0
 
   '@types/node@10.17.60': {}
 
@@ -1294,7 +1297,6 @@ snapshots:
   '@types/node@22.12.0':
     dependencies:
       undici-types: 6.20.0
-    optional: true
 
   '@types/node@8.10.66': {}
 
@@ -1953,8 +1955,7 @@ snapshots:
 
   undici-types@5.26.5: {}
 
-  undici-types@6.20.0:
-    optional: true
+  undici-types@6.20.0: {}
 
   util-deprecate@1.0.2: {}
 
@@ -1985,9 +1986,9 @@ snapshots:
       '@types/node': 22.12.0
       fsevents: 2.3.3
 
-  vitest-environment-clarinet@2.1.0(@hirosystems/clarinet-sdk@2.13.0-beta8(@types/node@22.12.0))(vitest@1.6.0(@types/node@22.12.0)):
+  vitest-environment-clarinet@2.1.0(@hirosystems/clarinet-sdk@2.13.0-beta17(@types/node@22.12.0))(vitest@1.6.0(@types/node@22.12.0)):
     dependencies:
-      '@hirosystems/clarinet-sdk': 2.13.0-beta8(@types/node@22.12.0)
+      '@hirosystems/clarinet-sdk': 2.13.0-beta17(@types/node@22.12.0)
       vitest: 1.6.0(@types/node@22.12.0)
 
   vitest@1.6.0(@types/node@22.12.0):
