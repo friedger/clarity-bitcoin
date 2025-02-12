@@ -191,9 +191,6 @@ describe("Bitcoin library with remote data", () => {
     const cbChunks = txProof.coinbaseMerkleProof.match(/.{1,64}/g);
     const cbProofs = cbChunks?.map((c) => hexToBytes(c)) || [];
 
-    console.log(cbProofs.map(bytesToHex));
-    console.log(proofCoinbase.hashes.map(bytesToHex));
-
     const cbTransaction = bitcoinjs.Transaction.fromHex(
       txProof.coinbaseTransaction
     );
