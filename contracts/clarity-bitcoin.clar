@@ -382,7 +382,11 @@
  (ok (map-set mock-burnchain-header-hashes burn-height hash)))
 
 (define-read-only (get-bc-h-hash (bh uint))
-	 (if DEBUG-MODE (map-get? mock-burnchain-header-hashes bh) (get-burn-block-info? header-hash bh)))
+	 (if DEBUG-MODE (match (map-get? mock-burnchain-header-hashes bh)
+		mock-data (some mock-data)
+		;; fall back to remote data if no mock data available
+		(get-burn-block-info? header-hash bh)) 
+		(get-burn-block-info? header-hash bh)))
 
 ;; END MOCK section
 
