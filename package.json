@@ -12,11 +12,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@hirosystems/clarinet-sdk": "2.13.0",
-    "@hirosystems/clarinet-sdk-wasm": "2.13.0",
+    "@hirosystems/clarinet-sdk": "2.14.0",
+    "@hirosystems/clarinet-sdk-wasm": "2.14.0",
     "@noble/hashes": "^1.7.1",
-    "@stacks/transactions": "^7.0.4",
-    "bitcoin-tx-proof": "git://github.com/friedger/bitcoin-tx-proof.git#4394d22",
+    "bitcoin-tx-proof": "git://github.com/friedger/bitcoin-tx-proof.git#ac53373055b16a9a8a40638f3154fe73180dd403",
+    "@stacks/common": "^6",
+    "@stacks/transactions": "^6",
     "bitcoinjs-lib": "^6.1.7",
     "chokidar-cli": "^3.0.0",
     "typescript": "^5.3.3",
@@ -25,12 +26,12 @@
     "vitest-environment-clarinet": "^2.1.0"
   },
   "engines": {
-    "node": "22.13"
+    "node": "22.14"
   },
   "pnpm": {
     "overrides": {
-      "@hirosystems/clarinet-sdk": "2.13.0",
-      "@hirosystems/clarinet-sdk-wasm": "2.13.0"
+      "@hirosystems/clarinet-sdk": "2.14.0",
+      "@hirosystems/clarinet-sdk-wasm": "2.14.0"
     }
   }
 }
