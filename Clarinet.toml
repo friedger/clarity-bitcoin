@@ -15,7 +15,7 @@ path = 'contracts/clarity-bitcoin-helper.clar'
 clarity_version = 2
 epoch = 2.1
 
-[contracts.clarity-bitcoin-v5]
+[contracts.clarity-bitcoin-lib-v5]
 path = 'contracts/clarity-bitcoin-v5.clar'
 clarity_version = 2
 epoch = 2.1
@@ -47,6 +47,16 @@ epoch = 2.1
 
 [contracts.send-to-first-input-compact]
 path = 'contracts/examples/send-to-first-input-compact.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.btc-stx-swap]
+path = 'contracts/examples/btc-stx-swap.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.clarity-bitcoin-helper-wtx]
+path = 'contracts/examples/clarity-bitcoin-helper-wtx.clar'
 clarity_version = 2
 epoch = 2.1
 

@@ -1,5 +1,7 @@
+import { hexToBytes } from "@noble/hashes/utils";
 import { Cl } from "@stacks/transactions";
-import { bytesToHex, hexToBytes } from "../utils";
+
+const contractName = "clarity-bitcoin";
 
 export const Error = {
   ERR_PROOF_TOO_SHORT: 8,
@@ -7,7 +9,7 @@ export const Error = {
 
 export function parseTx(tx: string, deployer: string) {
   return simnet.callReadOnlyFn(
-    "clarity-bitcoin",
+    contractName,
     "parse-tx",
     [Cl.bufferFromHex(tx)],
     deployer
@@ -20,7 +22,7 @@ export function parseWtx(
   deployer: string
 ) {
   return simnet.callReadOnlyFn(
-    "clarity-bitcoin",
+    contractName,
     "parse-wtx",
     [Cl.bufferFromHex(wtx), Cl.bool(calculateTxid)],
     deployer
@@ -29,7 +31,7 @@ export function parseWtx(
 
 export function parseBlockHeader(headerBuff: Uint8Array, deployer: string) {
   return simnet.callReadOnlyFn(
-    "clarity-bitcoin",
+    contractName,
     "parse-block-header",
     [Cl.buffer(headerBuff)],
     deployer
@@ -48,7 +50,7 @@ export function verifyMerkleProof(
 ) {
   const reverseTxId = txId.reverse();
   return simnet.callReadOnlyFn(
-    "clarity-bitcoin",
+    contractName,
     "verify-merkle-proof",
     [
       Cl.buffer(reverseTxId),
@@ -75,7 +77,7 @@ export function wasTxMinedCompact(
   sender: string
 ) {
   return simnet.callReadOnlyFn(
-    "clarity-bitcoin",
+    contractName,
     "was-tx-mined-compact",
     [
       Cl.uint(bitcoinHeight),
@@ -105,7 +107,7 @@ export function wasSegwitTxMinedCompact(
   sender: string
 ) {
   return simnet.callReadOnlyFn(
-    "clarity-bitcoin",
+    contractName,
     "was-segwit-tx-mined-compact",
     [
       Cl.uint(bitcoinHeight),

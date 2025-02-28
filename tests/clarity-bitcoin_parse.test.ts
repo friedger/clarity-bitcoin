@@ -1,10 +1,10 @@
 import { ResponseCV } from "@stacks/transactions";
 import { describe, it } from "vitest";
 import { parseBlockHeader, parseTx } from "./clients/clarity-bitcoin-client.ts";
-import { expectHeaderObject, expectTxObject, hexToBytes } from "./utils.ts";
+import { expectHeaderObject, expectTxObject } from "./utils.ts";
+import { hexToBytes } from "@noble/hashes/utils";
 
 const accounts = simnet.getAccounts();
-const chain = simnet;
 
 describe("Parse bitcoin txs", () => {
   it("Ensure that simple bitcoin txs can be parsed"),

@@ -1,9 +1,8 @@
 import { Cl } from "@stacks/transactions";
 import { describe, expect, it } from "vitest";
 import { Error, verifyMerkleProof } from "./clients/clarity-bitcoin-client.ts";
-import { hexToBytes } from "./utils.ts";
+import { hexToBytes } from "@noble/hashes/utils";
 const accounts = simnet.getAccounts();
-const chain = simnet;
 
 describe("Bitcoin library", () => {
   it("Ensure that tx ids are correctly constructed", () => {
