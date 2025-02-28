@@ -6,7 +6,8 @@ Based on work from [Jude Nelson](https://github.com/jcnelson/clarity-bitcoin) an
 
 Deployments on mainnet:
 
-- [Version 4](https://explorer.hiro.so/txid/0x7442d23307f2d7e9ec67eb1d63d643321cdc8bb603a375888f9c1f5bed9fb5d8?chain=mainnet): Added support for segwit transactions
+- [Version 5](https://explorer.hiro.so/txid/0xfe25941d97a1b965b09699b622ec1d701997be62708dbac2e7a8c36a49e3e9bc?chain=mainnet): Adds support for txid generation and improves security to reject left over data
+- [Version 4](https://explorer.hiro.so/txid/0x7442d23307f2d7e9ec67eb1d63d643321cdc8bb603a375888f9c1f5bed9fb5d8?chain=mainnet): Adds support for segwit transactions
 - [Version 3](https://explorer.hiro.so/txid/0xd493b9ada8899be8773d3f55b21d300ef83ac5c0dd38c8a4dd52a295bd71d539?chain=mainnet): Uses get-burn-block-info of Clarity V2 to verify txs in flash blocks
 - Version 2: Buggy - Do not use
 - [Version 1](https://explorer.hiro.so/txid/0x8b112f2b50c1fa864997b7496aaad1e3940700309a3fdcc6c07f1c6f8b9cfb7b?chain=mainnet): Initial version with no verification for tx in flash blocks
@@ -27,7 +28,6 @@ These are the main functions that can be used to verify that a tx was mined in a
 The block header can be provided as an object with the header details or as a buffer.
 
 - was-tx-mined-compact (header as a buffer)
-- was-tx-mined (header as an object)
 - was-segwit-tx-mined-compact (header as buffer)
 
 The two functions for non-segwit transaction take the following arguments in the same order:
