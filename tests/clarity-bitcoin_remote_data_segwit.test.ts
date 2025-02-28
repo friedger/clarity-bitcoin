@@ -1,51 +1,47 @@
-import { sha256 } from "@noble/hashes/sha256";
-import { bytesToHex, hexToBytes } from "@stacks/common";
-import { Cl, cvToString } from "@stacks/transactions";
-import * as bitcoinjs from "bitcoinjs-lib";
-import { describe, expect, it } from "vitest";
-import { cachedProof, manualProofData } from "./cachedProofs.ts";
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, hexToBytes } from '@stacks/common';
+import { Cl, cvToString } from '@stacks/transactions';
+import * as bitcoinjs from 'bitcoinjs-lib';
+import { describe, expect, it } from 'vitest';
+import { cachedProof, manualProofData } from './cachedProofs.ts';
 import {
   verifyMerkleProof,
   wasSegwitTxMinedCompact,
   wasTxMinedCompact,
-} from "./clients/clarity-bitcoin-client.ts";
-import { proofToArray } from "./conversion.ts";
+} from './clients/clarity-bitcoin-client.ts';
+import { proofToArray } from './conversion.ts';
 const accounts = simnet.getAccounts();
-const deployer = accounts.get("deployer")!;
+const deployer = accounts.get('deployer')!;
 
 // stacks height = 595050
 const blockHeight = 883230;
-const bitcoinBlockHeaderHash =
-  "00000000000000000001c55626b85b4b3ecb33f67645356a2b01f4dfba893679";
+const bitcoinBlockHeaderHash = '00000000000000000001c55626b85b4b3ecb33f67645356a2b01f4dfba893679';
 
 // https://mempool.space/api/block/00000000000000000001c55626b85b4b3ecb33f67645356a2b01f4dfba893679/header
 const blockHeader =
-  "040060208c8b71956e408769453d40275830b83856bc0d8afaf60000000000000000000069167b97329b04d11aea35a48fbfc00af71c9750c4526d024dbb97158793eac31379aa672677021707a18259";
+  '040060208c8b71956e408769453d40275830b83856bc0d8afaf60000000000000000000069167b97329b04d11aea35a48fbfc00af71c9750c4526d024dbb97158793eac31379aa672677021707a18259';
 
-describe("Bitcoin library with remote data", () => {
-  it("Ensure that remote data is as expected", () => {
-    const bbh = simnet.execute("burn-block-height");
+describe('Bitcoin library with remote data', () => {
+  it('Ensure that remote data is as expected', () => {
+    const bbh = simnet.execute('burn-block-height');
     expect(bbh.result).toBeUint(blockHeight);
 
-    var bbhh = simnet.execute(
-      "(get-burn-block-info? header-hash burn-block-height)"
-    );
+    var bbhh = simnet.execute('(get-burn-block-info? header-hash burn-block-height)');
     expect(bbhh.result).toBeSome(Cl.bufferFromHex(bitcoinBlockHeaderHash));
   });
 
-  it("Ensure that block header is correct", () => {
+  it('Ensure that block header is correct', () => {
     const blockHeaderVerify = simnet.callReadOnlyFn(
-      "clarity-bitcoin",
-      "verify-block-header",
+      'clarity-bitcoin',
+      'verify-block-header',
       [Cl.buffer(hexToBytes(blockHeader)), Cl.uint(blockHeight)],
       deployer
     );
     expect(blockHeaderVerify.result).toBeBool(true);
   });
 
-  it("Ensure that mined segwit tx can be verified ", async () => {
-    const txId =
-      "c1de234c01ecc47906117d012865ce3dabbbb081dc0309a74dbbae45e427aadc";
+  it('Ensure that mined segwit tx can be verified ', async () => {
+    const txId = 'c1de234c01ecc47906117d012865ce3dabbbb081dc0309a74dbbae45e427aadc';
 
     /**
      * Collect proof data
@@ -81,9 +77,7 @@ describe("Bitcoin library with remote data", () => {
     expect(verify.result).toBeOk(Cl.bool(true));
 
     // 1.2 verify merkle proof using coinbase tx id
-    const coinbaseTxId = sha256(
-      sha256(hexToBytes(txProof.legacyCoinbaseTxHex))
-    ).reverse();
+    const coinbaseTxId = sha256(sha256(hexToBytes(txProof.legacyCoinbaseTxHex))).reverse();
     expect(bytesToHex(coinbaseTxId)).toBe(manualProofData.coinbaseTxId);
     const cbHashes = proofToArray(txProof.coinbaseMerkleProof);
 
@@ -112,41 +106,32 @@ describe("Bitcoin library with remote data", () => {
       },
       deployer
     );
-    expect(resultCB.result).toBeOk(
-      Cl.buffer(hexToBytes(manualProofData.coinbaseTxId))
-    );
+    expect(resultCB.result).toBeOk(Cl.buffer(hexToBytes(manualProofData.coinbaseTxId)));
 
     // verify parsed coinbase tx (not used in proof)
     const parseCBTx = simnet.callReadOnlyFn(
-      "clarity-bitcoin",
-      "parse-tx",
+      'clarity-bitcoin',
+      'parse-tx',
       [Cl.buffer(hexToBytes(txProof.legacyCoinbaseTxHex))],
       deployer
     );
     expect(cvToString(parseCBTx.result)).toBe(
-      "(ok (tuple (ins (list (tuple (outpoint (tuple (hash 0x0000000000000000000000000000000000000000000000000000000000000000) (index u4294967295))) (scriptSig 0x031e7a0d041379aa672f53424943727970746f2e636f6d20506f6f6c2f0e8f08296459410349b85901) (sequence u4294967295)))) (locktime u0) (outs (list (tuple (scriptPubKey 0x00141843e47a9034732c7d904b5cae76e2c5d64e799c) (value u313078430)) (tuple (scriptPubKey 0x6a24aa21a9edf97f7d667a4e75a8b7235f1f66648bc2262d2dd5253e811ac1c257ae03d1d3b2) (value u0)))) (version u2)))"
+      '(ok (tuple (ins (list (tuple (outpoint (tuple (hash 0x0000000000000000000000000000000000000000000000000000000000000000) (index u4294967295))) (scriptSig 0x031e7a0d041379aa672f53424943727970746f2e636f6d20506f6f6c2f0e8f08296459410349b85901) (sequence u4294967295)))) (locktime u0) (outs (list (tuple (scriptPubKey 0x00141843e47a9034732c7d904b5cae76e2c5d64e799c) (value u313078430)) (tuple (scriptPubKey 0x6a24aa21a9edf97f7d667a4e75a8b7235f1f66648bc2262d2dd5253e811ac1c257ae03d1d3b2) (value u0)))) (version u2)))'
     );
 
     // verify merkle root (not used in proof)
-    const reversedMerkleRoot =
-      "69167b97329b04d11aea35a48fbfc00af71c9750c4526d024dbb97158793eac3";
-    expect(
-      bytesToHex(hexToBytes(manualProofData.merkleRoot).reverse())
-    ).toStrictEqual(reversedMerkleRoot);
+    const reversedMerkleRoot = '69167b97329b04d11aea35a48fbfc00af71c9750c4526d024dbb97158793eac3';
+    expect(bytesToHex(hexToBytes(manualProofData.merkleRoot).reverse())).toStrictEqual(
+      reversedMerkleRoot
+    );
 
     // 3. verify commitment, i.e. scriptPubkey of output of coinbase tx
     const commitment =
-      "6a24aa21a9edf97f7d667a4e75a8b7235f1f66648bc2262d2dd5253e811ac1c257ae03d1d3b2";
+      '6a24aa21a9edf97f7d667a4e75a8b7235f1f66648bc2262d2dd5253e811ac1c257ae03d1d3b2';
     expect(
-      "6a24aa21a9ed" +
+      '6a24aa21a9ed' +
         bytesToHex(
-          sha256(
-            sha256(
-              hexToBytes(
-                txProof.witnessMerkleRoot + txProof.witnessReservedValue
-              )
-            )
-          )
+          sha256(sha256(hexToBytes(txProof.witnessMerkleRoot + txProof.witnessReservedValue)))
         )
     ).toStrictEqual(commitment);
 
@@ -156,12 +141,8 @@ describe("Bitcoin library with remote data", () => {
     expect(txProof.blockHeader).toBe(blockHeader);
     expect(txProof.txIndex).toBe(manualProofData.proof.txIndex);
     expect(txProof.merkleProofDepth).toBe(manualProofData.proof.treeDepth);
-    expect(txProof.witnessReservedValue).toBe(
-      manualProofData.witnessReservedValue
-    );
-    expect(txProof.legacyCoinbaseTxHex).toBe(
-      manualProofData.legacyCoinbaseTxHex
-    );
+    expect(txProof.witnessReservedValue).toBe(manualProofData.witnessReservedValue);
+    expect(txProof.legacyCoinbaseTxHex).toBe(manualProofData.legacyCoinbaseTxHex);
 
     // 4. verify segwit tx was mined
     const result = wasSegwitTxMinedCompact(
@@ -180,7 +161,7 @@ describe("Bitcoin library with remote data", () => {
 
     // calculate expected wtxid
     const bitcoinjsTx = bitcoinjs.Transaction.fromHex(manualProofData.txHex);
-    const expectedWtxid = bitcoinjsTx.getHash(true).reverse().toString("hex");
+    const expectedWtxid = bitcoinjsTx.getHash(true).reverse().toString('hex');
     expect(result.result).toBeOk(Cl.buffer(hexToBytes(expectedWtxid)));
   }, 100_000); // using bitcoinTxProof might take longer
 });

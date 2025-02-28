@@ -48,6 +48,10 @@ importers:
       vitest-environment-clarinet:
         specifier: ^2.1.0
         version: 2.1.0(@hirosystems/clarinet-sdk@2.15.0(@types/node@22.12.0))(vitest@1.6.0(@types/node@22.12.0))
+    devDependencies:
+      '@stacks/prettier-config':
+        specifier: ^0.0.10
+        version: 0.0.10
 
 packages:
 
@@ -317,6 +321,9 @@ packages:
 
   '@stacks/network@6.17.0':
     resolution: {integrity: sha512-numHbfKjwco/rbkGPOEz8+FcJ2nBnS/tdJ8R422Q70h3SiA9eqk9RjSzB8p4JP8yW1SZvW+eihADHfMpBuZyfw==}
+
+  '@stacks/prettier-config@0.0.10':
+    resolution: {integrity: sha512-MrYWGEgO/mYR8TOZIKknQEHbFQZ5VyAD/s8eF2Yxr6Lgalt2alVEh+6ODehVP2uepkyXPmJzLbaQYs8/L4E78Q==}
 
   '@stacks/transactions@6.17.0':
     resolution: {integrity: sha512-FUah2BRgV66ApLcEXGNGhwyFTRXqX5Zco3LpiM3essw8PF0NQlHwwdPgtDko5RfrJl3LhGXXe/30nwsfNnB3+g==}
@@ -870,6 +877,11 @@ packages:
     resolution: {integrity: sha512-6oz2beyjc5VMn/KV1pPw8fliQkhBXrVn1Z3TVyqZxU8kZpzEKhBdmCFqI6ZbmGtamQvQGuU1sgPTk8ZrXDD7jQ==}
     engines: {node: ^10 || ^12 || >=14}
 
+  prettier@2.5.1:
+    resolution: {integrity: sha512-vBZcPRUR5MZJwoyi3ZoyQlc1rXeEck8KgeC9AwwOn+exuxLxq5toTRDTSaVrXHxelDMHy9zlicw8u66yxoSUFg==}
+    engines: {node: '>=10.13.0'}
+    hasBin: true
+
   pretty-format@29.7.0:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -1348,6 +1360,10 @@ snapshots:
       cross-fetch: 3.2.0
     transitivePeerDependencies:
       - encoding
+
+  '@stacks/prettier-config@0.0.10':
+    dependencies:
+      prettier: 2.5.1
 
   '@stacks/transactions@6.17.0':
     dependencies:
@@ -1917,6 +1933,8 @@ snapshots:
       nanoid: 3.3.8
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  prettier@2.5.1: {}
 
   pretty-format@29.7.0:
     dependencies:

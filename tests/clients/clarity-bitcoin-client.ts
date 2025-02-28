@@ -1,29 +1,20 @@
-import { hexToBytes } from "@noble/hashes/utils";
-import { Cl } from "@stacks/transactions";
+import { hexToBytes } from '@noble/hashes/utils';
+import { Cl } from '@stacks/transactions';
 
-const contractName = "clarity-bitcoin";
+const contractName = 'clarity-bitcoin';
 
 export const Error = {
   ERR_PROOF_TOO_SHORT: 8,
 };
 
 export function parseTx(tx: string, deployer: string) {
-  return simnet.callReadOnlyFn(
-    contractName,
-    "parse-tx",
-    [Cl.bufferFromHex(tx)],
-    deployer
-  );
+  return simnet.callReadOnlyFn(contractName, 'parse-tx', [Cl.bufferFromHex(tx)], deployer);
 }
 
-export function parseWtx(
-  wtx: string,
-  calculateTxid: boolean,
-  deployer: string
-) {
+export function parseWtx(wtx: string, calculateTxid: boolean, deployer: string) {
   return simnet.callReadOnlyFn(
     contractName,
-    "parse-wtx",
+    'parse-wtx',
     [Cl.bufferFromHex(wtx), Cl.bool(calculateTxid)],
     deployer
   );
@@ -32,7 +23,7 @@ export function parseWtx(
 export function parseBlockHeader(headerBuff: Uint8Array, deployer: string) {
   return simnet.callReadOnlyFn(
     contractName,
-    "parse-block-header",
+    'parse-block-header',
     [Cl.buffer(headerBuff)],
     deployer
   );
@@ -51,14 +42,14 @@ export function verifyMerkleProof(
   const reverseTxId = txId.reverse();
   return simnet.callReadOnlyFn(
     contractName,
-    "verify-merkle-proof",
+    'verify-merkle-proof',
     [
       Cl.buffer(reverseTxId),
       Cl.buffer(merkleRoot),
       Cl.tuple({
-        hashes: Cl.list(merkleProof.hashes.map((h) => Cl.buffer(h))),
-        "tx-index": Cl.uint(merkleProof.txIndex),
-        "tree-depth": Cl.uint(merkleProof.treeDepth),
+        hashes: Cl.list(merkleProof.hashes.map(h => Cl.buffer(h))),
+        'tx-index': Cl.uint(merkleProof.txIndex),
+        'tree-depth': Cl.uint(merkleProof.treeDepth),
       }),
     ],
     deployer
@@ -78,15 +69,15 @@ export function wasTxMinedCompact(
 ) {
   return simnet.callReadOnlyFn(
     contractName,
-    "was-tx-mined-compact",
+    'was-tx-mined-compact',
     [
       Cl.uint(bitcoinHeight),
       Cl.buffer(hexToBytes(txHex)),
       Cl.buffer(hexToBytes(headerHex)),
       Cl.tuple({
-        hashes: Cl.list(merkleProof.hashes.map((h) => Cl.buffer(h))),
-        "tx-index": Cl.uint(merkleProof.txIndex),
-        "tree-depth": Cl.uint(merkleProof.treeDepth),
+        hashes: Cl.list(merkleProof.hashes.map(h => Cl.buffer(h))),
+        'tx-index': Cl.uint(merkleProof.txIndex),
+        'tree-depth': Cl.uint(merkleProof.treeDepth),
       }),
     ],
     sender
@@ -108,7 +99,7 @@ export function wasSegwitTxMinedCompact(
 ) {
   return simnet.callReadOnlyFn(
     contractName,
-    "was-segwit-tx-mined-compact",
+    'was-segwit-tx-mined-compact',
     [
       Cl.uint(bitcoinHeight),
       Cl.buffer(hexToBytes(txHex)),

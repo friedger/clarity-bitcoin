@@ -1,18 +1,18 @@
-import { hexToBytes } from "@noble/hashes/utils";
-import { bytesToHex } from "@stacks/common";
-import { Cl } from "@stacks/transactions";
+import { hexToBytes } from '@noble/hashes/utils';
+import { bytesToHex } from '@stacks/common';
+import { Cl } from '@stacks/transactions';
 import {
   ClarityType,
   ClarityValue,
   ListCV,
   ResponseCV,
   TupleCV,
-} from "@stacks/transactions/dist/clarity/index.js";
-import { expect } from "vitest";
+} from '@stacks/transactions/dist/clarity/index.js';
+import { expect } from 'vitest';
 
 const byteToHexCache: string[] = new Array(0xff);
 for (let n = 0; n <= 0xff; ++n) {
-  byteToHexCache[n] = n.toString(16).padStart(2, "0");
+  byteToHexCache[n] = n.toString(16).padStart(2, '0');
 }
 
 export function hexReverse(hexString: string) {
@@ -48,7 +48,7 @@ export function expectHeaderObject(
     Cl.tuple({
       version: Cl.uint(expectedHeaderObject.version),
       parent: Cl.buffer(hexToBytes(expectedHeaderObject.parent)),
-      "merkle-root": Cl.buffer(hexToBytes(expectedHeaderObject.merkleRoot)),
+      'merkle-root': Cl.buffer(hexToBytes(expectedHeaderObject.merkleRoot)),
       timestamp: Cl.uint(expectedHeaderObject.timestamp),
       nbits: Cl.uint(expectedHeaderObject.nbits),
       nonce: Cl.uint(expectedHeaderObject.nonce),
@@ -76,16 +76,12 @@ export function expectTxObject(result: ResponseCV, expectedTxObject: TxObject) {
 
   for (let index = 0; index < expectedTxObject.outs.length; index++) {
     expect((resultTxObject.outs as ListCV).list[index]).toBeTuple({
-      scriptPubKey: Cl.buffer(
-        hexToBytes(expectedTxObject.outs[index].scriptPubKey)
-      ),
+      scriptPubKey: Cl.buffer(hexToBytes(expectedTxObject.outs[index].scriptPubKey)),
       value: Cl.uint(expectedTxObject.outs[index].value),
     });
   }
 
   if (expectedTxObject.txid) {
-    expect(resultTxObject.txid).toBeSome(
-      Cl.buffer(hexToBytes(expectedTxObject.txid))
-    );
+    expect(resultTxObject.txid).toBeSome(Cl.buffer(hexToBytes(expectedTxObject.txid)));
   }
 }

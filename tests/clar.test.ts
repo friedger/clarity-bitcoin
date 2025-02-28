@@ -1,15 +1,12 @@
-import { ParsedTransactionResult, tx } from "@hirosystems/clarinet-sdk";
-import { Cl, ClarityType, cvToString } from "@stacks/transactions";
-import { describe, expect, it } from "vitest";
-import {
-  FunctionAnnotations,
-  extractTestAnnotations,
-} from "./utils/clarity-parser";
+import { ParsedTransactionResult, tx } from '@hirosystems/clarinet-sdk';
+import { Cl, ClarityType, cvToString } from '@stacks/transactions';
+import { describe, expect, it } from 'vitest';
+import { FunctionAnnotations, extractTestAnnotations } from './utils/clarity-parser';
 
 function isTestContract(contractName: string) {
   return (
-    contractName.substring(contractName.length - 5) === "_test" &&
-    contractName.substring(contractName.length - 10) !== "_flow_test"
+    contractName.substring(contractName.length - 5) === '_test' &&
+    contractName.substring(contractName.length - 10) !== '_flow_test'
   );
 }
 
@@ -20,35 +17,31 @@ simnet.getContractsInterfaces().forEach((contract, contractFQN) => {
   }
 
   describe(contractFQN, () => {
-    const hasDefaultPrepareFunction =
-      contract.functions.findIndex((f) => f.name === "prepare") >= 0;
+    const hasDefaultPrepareFunction = contract.functions.findIndex(f => f.name === 'prepare') >= 0;
 
-    contract.functions.forEach((functionCall) => {
+    contract.functions.forEach(functionCall => {
       const functionName = functionCall.name;
-      if (!functionName.startsWith("test-")) {
+      if (!functionName.startsWith('test-')) {
         return;
       }
       const source = simnet.getContractSource(contractFQN)!;
       const annotations: any = extractTestAnnotations(source);
-      const functionAnnotations: FunctionAnnotations =
-        annotations[functionName] || {};
+      const functionAnnotations: FunctionAnnotations = annotations[functionName] || {};
 
-      const mineBlocksBefore =
-        parseInt(annotations["mine-blocks-before"] as string) || 0;
+      const mineBlocksBefore = parseInt(annotations['mine-blocks-before'] as string) || 0;
 
       it(`${functionCall.name}${
-        functionAnnotations.name ? `: ${functionAnnotations.name}` : ""
+        functionAnnotations.name ? `: ${functionAnnotations.name}` : ''
       }`, () => {
         if (hasDefaultPrepareFunction && !functionAnnotations.prepare)
-          functionAnnotations.prepare = "prepare";
-        if (functionAnnotations["no-prepare"])
-          delete functionAnnotations.prepare;
+          functionAnnotations.prepare = 'prepare';
+        if (functionAnnotations['no-prepare']) delete functionAnnotations.prepare;
 
         const callerAddress = functionAnnotations.caller
           ? annotations.caller[0] === "'"
             ? `${(annotations.caller as string).substring(1)}`
             : accounts.get(annotations.caller)!
-          : accounts.get("deployer")!;
+          : accounts.get('deployer')!;
 
         if (functionAnnotations.prepare) {
           mineBlockWithPrepareAndTestFunctionCall(
@@ -59,12 +52,7 @@ simnet.getContractsInterfaces().forEach((contract, contractFQN) => {
             callerAddress
           );
         } else {
-          mineBlockWithTestFunctionCall(
-            contractFQN,
-            mineBlocksBefore,
-            functionName,
-            callerAddress
-          );
+          mineBlockWithTestFunctionCall(contractFQN, mineBlocksBefore, functionName, callerAddress);
         }
       });
     });
@@ -79,29 +67,17 @@ function mineBlockWithPrepareAndTestFunctionCall(
 ) {
   if (mineBlocksBefore > 0) {
     let block = simnet.mineBlock([
-      tx.callPublicFn(
-        contractFQN,
-        prepareFunctionName,
-        [],
-        accounts.get("deployer")!
-      ),
+      tx.callPublicFn(contractFQN, prepareFunctionName, [], accounts.get('deployer')!),
     ]);
     expectOkTrue(block, contractFQN, prepareFunctionName, 0);
     simnet.mineEmptyBlocks(mineBlocksBefore - 1);
 
-    block = simnet.mineBlock([
-      tx.callPublicFn(contractFQN, functionName, [], callerAddress),
-    ]);
+    block = simnet.mineBlock([tx.callPublicFn(contractFQN, functionName, [], callerAddress)]);
 
     expectOkTrue(block, contractFQN, functionName, 0);
   } else {
     let block = simnet.mineBlock([
-      tx.callPublicFn(
-        contractFQN,
-        prepareFunctionName,
-        [],
-        accounts.get("deployer")!
-      ),
+      tx.callPublicFn(contractFQN, prepareFunctionName, [], accounts.get('deployer')!),
       tx.callPublicFn(contractFQN, functionName, [], callerAddress),
     ]);
     expectOkTrue(block, contractFQN, prepareFunctionName, 0);
@@ -116,9 +92,7 @@ function mineBlockWithTestFunctionCall(
   callerAddress: string
 ) {
   simnet.mineEmptyBlocks(mineBlocksBefore);
-  const block = simnet.mineBlock([
-    tx.callPublicFn(contractFQN, functionName, [], callerAddress),
-  ]);
+  const block = simnet.mineBlock([tx.callPublicFn(contractFQN, functionName, [], callerAddress)]);
   expectOkTrue(block, contractFQN, functionName, 0);
 }
 

@@ -11,13 +11,14 @@
   },
   "author": "",
   "license": "MIT",
+  "prettier": "@stacks/prettier-config",
   "dependencies": {
     "@hirosystems/clarinet-sdk": "2.15.0",
     "@hirosystems/clarinet-sdk-wasm": "2.15.0",
     "@noble/hashes": "^1.7.1",
-    "bitcoin-tx-proof": "git://github.com/friedger/bitcoin-tx-proof.git#00586b10632bac0968d63b0156b9c61e2da3bbcb",
     "@stacks/common": "^6",
     "@stacks/transactions": "^6",
+    "bitcoin-tx-proof": "git://github.com/friedger/bitcoin-tx-proof.git#00586b10632bac0968d63b0156b9c61e2da3bbcb",
     "bitcoinjs-lib": "^6.1.7",
     "chokidar-cli": "^3.0.0",
     "typescript": "^5.3.3",
@@ -33,5 +34,8 @@
       "@hirosystems/clarinet-sdk": "2.15.0",
       "@hirosystems/clarinet-sdk-wasm": "2.15.0"
     }
+  },
+  "devDependencies": {
+    "@stacks/prettier-config": "^0.0.10"
   }
 }
