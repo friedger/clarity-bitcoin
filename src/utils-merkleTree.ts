@@ -1,11 +1,10 @@
-import { SHA256 } from "https://deno.land/x/sha256@v1.0.2/mod.ts";
+import { SHA256 } from 'https://deno.land/x/sha256@v1.0.2/mod.ts';
 
-export const hexStringBtcHash =
-  (sha256: SHA256) => (valueToBeHashed: string) => {
-    // hash twice
-    const hash1 = sha256.init().update(valueToBeHashed, "hex").digest();
-    return sha256.init().update(hash1).digest("hex");
-  };
+export const hexStringBtcHash = (sha256: SHA256) => (valueToBeHashed: string) => {
+  // hash twice
+  const hash1 = sha256.init().update(valueToBeHashed, 'hex').digest();
+  return sha256.init().update(hash1).digest('hex');
+};
 
 export interface IMerkleHashes {
   level: number;
@@ -40,8 +39,7 @@ export class MerkleTree {
 
   public getRootHash(): string {
     return this.hashes.filter(
-      (e: IMerkleHashes) =>
-        e.level === this.hashes[this.hashes.length - 1].level
+      (e: IMerkleHashes) => e.level === this.hashes[this.hashes.length - 1].level
     )[0].hashes[0];
   }
 
@@ -54,23 +52,16 @@ export class MerkleTree {
     let relevantIndex = investigatedEntryIndex;
     const proofElements: string[] = [];
     while (level < levels) {
-      relevantIndex =
-        level === 0
-          ? investigatedEntryIndex
-          : this.getRelevantIndex(relevantIndex);
+      relevantIndex = level === 0 ? investigatedEntryIndex : this.getRelevantIndex(relevantIndex);
       const isLeftNode = relevantIndex % 2 === 0;
       if (isLeftNode) {
         proofElements.push(
-          this.hashes.filter((e: IMerkleHashes) => e.level === level)[0].hashes[
-            relevantIndex + 1
-          ]
+          this.hashes.filter((e: IMerkleHashes) => e.level === level)[0].hashes[relevantIndex + 1]
         );
         // same level proof comes from right
       } else {
         proofElements.push(
-          this.hashes.filter((e: IMerkleHashes) => e.level === level)[0].hashes[
-            relevantIndex - 1
-          ]
+          this.hashes.filter((e: IMerkleHashes) => e.level === level)[0].hashes[relevantIndex - 1]
         );
         // same level proof comes from left
       }

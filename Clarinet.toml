@@ -15,7 +15,7 @@ path = 'contracts/clarity-bitcoin-helper.clar'
 clarity_version = 2
 epoch = 2.1
 
-[contracts.clarity-bitcoin-v5]
+[contracts.clarity-bitcoin-lib-v5]
 path = 'contracts/clarity-bitcoin-v5.clar'
 clarity_version = 2
 epoch = 2.1
@@ -50,6 +50,16 @@ path = 'contracts/examples/send-to-first-input-compact.clar'
 clarity_version = 2
 epoch = 2.1
 
+[contracts.btc-stx-swap]
+path = 'contracts/examples/btc-stx-swap.clar'
+clarity_version = 2
+epoch = 2.1
+
+[contracts.clarity-bitcoin-helper-wtx]
+path = 'contracts/examples/clarity-bitcoin-helper-wtx.clar'
+clarity_version = 2
+epoch = 2.1
+
 [contracts.stx-account]
 path = 'contracts/helper-stx-account.clar'
 clarity_version = 2
@@ -67,3 +77,8 @@ strict = false
 trusted_sender = false
 trusted_caller = false
 callee_filter = false
+
+[repl.remote_data]
+enabled = true
+api_url = "https://api.hiro.so"
+initial_height = 595050
