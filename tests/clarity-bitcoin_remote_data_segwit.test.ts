@@ -1,6 +1,6 @@
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex, hexToBytes } from '@stacks/common';
-import { Cl, cvToString } from '@stacks/transactions';
+import { bufferCV, Cl, cvToString } from '@stacks/transactions';
 import * as bitcoinjs from 'bitcoinjs-lib';
 import { describe, expect, it } from 'vitest';
 import { cachedProof, manualProofData } from './cachedProofs.ts';
@@ -10,6 +10,7 @@ import {
   wasTxMinedCompact,
 } from './clients/clarity-bitcoin-client.ts';
 import { proofToArray } from './conversion.ts';
+import { bitcoinTxProof } from 'bitcoin-tx-proof';
 const accounts = simnet.getAccounts();
 const deployer = accounts.get('deployer')!;
 
@@ -160,8 +161,8 @@ describe('Bitcoin library with remote data', () => {
     );
 
     // calculate expected wtxid
-    const bitcoinjsTx = bitcoinjs.Transaction.fromHex(manualProofData.txHex);
+    const bitcoinjsTx = bitcoinjs.Transaction.fromHex(txProof.transaction);
     const expectedWtxid = bitcoinjsTx.getHash(true).reverse().toString('hex');
-    expect(result.result).toBeOk(Cl.buffer(hexToBytes(expectedWtxid)));
+    expect(result.result).toBeOk(bufferCV(hexToBytes(expectedWtxid)));
   }, 100_000); // using bitcoinTxProof might take longer
 });
