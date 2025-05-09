@@ -543,13 +543,13 @@
 	(wproof (list 14 (buff 32)))
 	(witness-merkle-root (buff 32))
 	(witness-reserved-value (buff 32))
-	(ctx (buff 1024))
-	(cproof (list 14 (buff 32))))
+	(cb-tx (buff 4096))
+	(cb-proof (list 14 (buff 32))))
 	(begin
 		;; verify that the coinbase tx is correct
-		(try! (was-tx-mined-compact height ctx header { tx-index: u0, hashes: cproof, tree-depth: tree-depth }))
+		(try! (was-tx-mined-compact height cb-tx header { tx-index: u0, hashes: cb-proof, tree-depth: tree-depth }))
 		(let (
-			(witness-out (get-commitment-scriptPubKey (get outs (try! (parse-tx ctx)))))
+			(witness-out (get-commitment-scriptPubKey (get outs (try! (parse-tx cb-tx)))))
 			(final-hash (sha256 (sha256 (concat witness-merkle-root witness-reserved-value))))
 			(reversed-wtxid (get-reversed-txid wtx))
 			(wtxid (reverse-buff32 reversed-wtxid))
