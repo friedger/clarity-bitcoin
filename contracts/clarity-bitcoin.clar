@@ -22,9 +22,9 @@
 ;; Helper functions to parse bitcoin transactions
 ;;
 
-;; Create a list with n elments `true`. n must be smaller than 9.
+;; Create a list with n elments `true`. n must be not greater than 50.
 (define-private (bool-list-of-len (n uint))
-	(unwrap-panic (slice? (list true true true true true true true true) u0 n)))
+	(unwrap-panic (slice? (list true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true) u0 n)))
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
@@ -130,7 +130,7 @@
 (define-read-only (read-next-txin (ignored bool)
 																	(result (response {ctx: { txbuff: (buff 4096), index: uint },
 																												remaining: uint,
-																												txins: (list 8 {outpoint: {
+																												txins: (list 50 {outpoint: {
 																																									 hash: (buff 32),
 																																									 index: uint},
 																																				scriptSig: (buff 256),      ;; just big enough to hold a 2-of-3 multisig script
@@ -152,7 +152,7 @@
 																										hash: (get hashslice parsed-hash),
 																										index: (get uint32 parsed-index) },
 																				scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ERR-VARSLICE-TOO-LONG)),
-																				sequence: (get uint32 parsed-sequence)}) u8)
+																				sequence: (get uint32 parsed-sequence)}) u50)
 														(err ERR-TOO-MANY-TXINS))}))
 							))
 
@@ -165,7 +165,7 @@
 		(let ((parsed-num-txins (try! (read-varint ctx)))
 					(num-txins (get varint parsed-num-txins))
 					(new-ctx (get ctx parsed-num-txins)))
-		 (if (> num-txins u8)
+		 (if (> num-txins u50)
 				 (err ERR-TOO-MANY-TXINS)
 				 (fold read-next-txin (bool-list-of-len num-txins) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
 
@@ -176,7 +176,7 @@
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout (ignored bool)
 																	 (result (response {ctx: { txbuff: (buff 4096), index: uint },
-																											txouts: (list 8 {value: uint,
+																											txouts: (list 50 {value: uint,
 																																			 scriptPubKey: (buff 128)})}
 																							 uint)))
 		(let ((state (unwrap! result result))
@@ -188,7 +188,7 @@
 											(as-max-len?
 													(append (get txouts state)
 															{   value: (get uint64 parsed-value),
-																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))}) u8)
+																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))}) u50)
 											(err ERR-TOO-MANY-TXOUTS))})))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
@@ -200,7 +200,7 @@
 		(let ((parsed-num-txouts (try! (read-varint ctx)))
 					(num-txouts (get varint parsed-num-txouts))
 					(new-ctx (get ctx parsed-num-txouts)))
-		 (if (> num-txouts u8)
+		 (if (> num-txouts u50)
 				 (err ERR-TOO-MANY-TXOUTS)
 				 (fold read-next-txout (bool-list-of-len num-txouts) (ok { ctx: new-ctx, txouts: (list)})))))
 
@@ -248,7 +248,7 @@
 	(fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
 
 ;;
-;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; Parses a Bitcoin transaction, with up to 50 inputs and 50 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
 ;; It will also calculate and return the TXID if calculate-txid is set to true.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
@@ -256,7 +256,7 @@
 ;;      segwit-marker: uint,
 ;;      segwit-version: uint,
 ;;      txid: (optional (buff 32))
-;;      ins: (list 8
+;;      ins: (list 50
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
 ;;                  hash: (buff 32),
@@ -265,12 +265,12 @@
 ;;              scriptSig: (buff 256),      ;; spending condition script
 ;;              sequence: uint
 ;;          }),
-;;      outs: (list 8
+;;      outs: (list 50
 ;;          {
 ;;              value: uint,                ;; satoshis sent
 ;;              scriptPubKey: (buff 128)    ;; parse this to get an address
 ;;          }),
-;;      witnesses: (list 8 (list 8 (buff 128))),
+;;      witnesses: (list 50 (list 8 (buff 128))),
 ;;      locktime: uint
 ;; })
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
@@ -454,7 +454,7 @@
 
 ;; Gets the scriptPubKey in the last output that follows the 0x6a24aa21a9ed pattern regardless of its content
 ;; as per BIP-0141 (https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure)
-(define-read-only (get-commitment-scriptPubKey (outs (list 8 { value: uint, scriptPubKey: (buff 128) })))
+(define-read-only (get-commitment-scriptPubKey (outs (list 50 { value: uint, scriptPubKey: (buff 128) })))
 	(fold inner-get-commitment-scriptPubKey outs 0x))
 
 (define-read-only (inner-get-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 128) }) (result (buff 128)))
