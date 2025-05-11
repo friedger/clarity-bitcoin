@@ -1,7 +1,14 @@
 ;; @contract stateless contract to verify bitcoin transaction
-;; @version 5
+;; @version 6
 
-;; version 5 adds support for txid generation and improves security
+;; version 6 increases the transactions limits
+;; - max tx size is 4096 bytes (including coinbase tx)
+;; - max 50 inputs
+;; - max 50 outputs
+;; - max size of scriptSig is 256 bytes
+;; - max size of scriptPubKey is 520 bytes
+;; - max 8 witness items per input
+;; - max size of witness item is 128 bytes
 
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
@@ -177,7 +184,7 @@
 (define-read-only (read-next-txout (ignored bool)
 																	 (result (response {ctx: { txbuff: (buff 4096), index: uint },
 																											txouts: (list 50 {value: uint,
-																																			 scriptPubKey: (buff 128)})}
+																																			 scriptPubKey: (buff 520)})}
 																							 uint)))
 		(let ((state (unwrap! result result))
 					(parsed-value (try! (read-uint64 (get ctx state))))
@@ -188,7 +195,7 @@
 											(as-max-len?
 													(append (get txouts state)
 															{   value: (get uint64 parsed-value),
-																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))}) u50)
+																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u520) (err ERR-VARSLICE-TOO-LONG))}) u50)
 											(err ERR-TOO-MANY-TXOUTS))})))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
@@ -221,7 +228,7 @@
 ;; Read the next witness data, and update the index in ctx to point to the next witness.
 (define-read-only (read-next-witness (ignored bool)
 	(result (response
-		{ ctx: {txbuff: (buff 4096), index: uint}, witnesses: (list 8 (list 8 (buff 128))) } uint)))
+		{ ctx: {txbuff: (buff 4096), index: uint}, witnesses: (list 50 (list 8 (buff 128))) } uint)))
 	(let ((state (unwrap! result result))
 				(parsed-num-items (try! (read-varint (get ctx state))))
 				(ctx (get ctx parsed-num-items))
@@ -230,17 +237,17 @@
 				;; read all stack items for current txin and add to witnesses.
 				(let ((parsed-items (try! (fold read-next-item (bool-list-of-len varint) (ok { ctx: ctx, items: (list)})))))
 						(ok {
-							witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get items parsed-items)) u8)),
+							witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get items parsed-items)) u50)),
 							ctx: (get ctx parsed-items)
 						}))
 				;; txin has not witness data, add empty list to witnesses.
 				(ok {
-					witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u8)),
+					witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u50)),
 					ctx: ctx
 				}))))
 
 ;; Read all witness data in a transaction.  Update the index to point to the end of the tx, if all goes well.
-;; Returns (ok {witnesses: (list 8 (list 8 (buff 128))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
+;; Returns (ok {witnesses: (list 50 (list 8 (buff 128))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
@@ -248,7 +255,7 @@
 	(fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
 
 ;;
-;; Parses a Bitcoin transaction, with up to 50 inputs and 50 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; Parses a Bitcoin transaction, with up to 50 inputs and 50 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 520 bytes.
 ;; It will also calculate and return the TXID if calculate-txid is set to true.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
@@ -268,9 +275,9 @@
 ;;      outs: (list 50
 ;;          {
 ;;              value: uint,                ;; satoshis sent
-;;              scriptPubKey: (buff 128)    ;; parse this to get an address
+;;              scriptPubKey: (buff 520)    ;; parse this to get an address
 ;;          }),
-;;      witnesses: (list 50 (list 8 (buff 128))),
+;;      witnesses: (list 50 (list 8 (buff 520))),
 ;;      locktime: uint
 ;; })
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
@@ -309,7 +316,7 @@
 		})))
 
 ;;
-;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 520 bytes.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
 ;;      version: uint,                      ;; tx version
@@ -325,7 +332,7 @@
 ;;      outs: (list 8
 ;;          {
 ;;              value: uint,                ;; satoshis sent
-;;              scriptPubKey: (buff 128)    ;; parse this to get an address
+;;              scriptPubKey: (buff 520)    ;; parse this to get an address
 ;;          }),
 ;;      locktime: uint
 ;; })
@@ -454,15 +461,15 @@
 
 ;; Gets the scriptPubKey in the last output that follows the 0x6a24aa21a9ed pattern regardless of its content
 ;; as per BIP-0141 (https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure)
-(define-read-only (get-commitment-scriptPubKey (outs (list 50 { value: uint, scriptPubKey: (buff 128) })))
+(define-read-only (get-commitment-scriptPubKey (outs (list 50 { value: uint, scriptPubKey: (buff 520) })))
 	(fold inner-get-commitment-scriptPubKey outs 0x))
 
-(define-read-only (inner-get-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 128) }) (result (buff 128)))
+(define-read-only (inner-get-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 520) }) (result (buff 520)))
 	(let ((commitment (get scriptPubKey out)))
 		(if (is-commitment-pattern commitment) commitment result)))
 
 ;; Returns false, if scriptPubKey does not have the commitment prefix.
-(define-read-only (is-commitment-pattern (scriptPubKey (buff 128)))
+(define-read-only (is-commitment-pattern (scriptPubKey (buff 520)))
 	(asserts! (is-eq (unwrap! (slice? scriptPubKey u0 u6) false) 0x6a24aa21a9ed) false))
 
 ;;
