@@ -9,10 +9,10 @@ const btcRPC = new BitcoinRPC(btcRPCConfig);
 const maxTxSize = 4096; // Maximum transaction size in bytes
 const maxInputs = 50; // Maximum number of inputs
 const maxOutputs = 50; // Maximum number of outputs
-const maxScriptSigSize = 520; // Maximum scriptSig size in bytes
-const maxScriptPubKeySize = 520; // Maximum scriptPubKey size in bytes
-const maxWitnessItems = 12; // Maximum number of witness items
-const maxWitnessItemSize = 520; // Maximum witness item size in bytes
+const maxScriptSigSize = 1376; // Maximum scriptSig size in bytes
+const maxScriptPubKeySize = 1376; // Maximum scriptPubKey size in bytes
+const maxWitnessItems = 13; // Maximum number of witness items
+const maxWitnessItemSize = 1376; // Maximum witness item size in bytes
 
 const main = async () => {
   for (let i = 895500; i < 900000; i++) {
@@ -60,7 +60,7 @@ const main = async () => {
               }
               for (const witness of input.txinwitness) {
                 if (witness.length / 2 > maxWitnessItemSize) {
-                  // violations.push(`Witness item too large: ${witness.length / 2} bytes`);
+                  violations.push(`Witness item too large: ${witness.length / 2} bytes`);
                 }
               }
             }
