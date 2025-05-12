@@ -316,11 +316,11 @@
 		})))
 
 ;;
-;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 1376 bytes each, and with scriptPubKeys up to 1376 bytes.
+;; Parses a Bitcoin transaction, with up to 50 inputs and 50 outputs, with scriptSigs of up to 1376 bytes each, and with scriptPubKeys up to 1376 bytes.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
 ;;      version: uint,                      ;; tx version
-;;      ins: (list 8
+;;      ins: (list 50
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
 ;;                  hash: (buff 32),
@@ -329,7 +329,7 @@
 ;;              scriptSig: (buff 1376),      ;; spending condition script
 ;;              sequence: uint
 ;;          }),
-;;      outs: (list 8
+;;      outs: (list 50
 ;;          {
 ;;              value: uint,                ;; satoshis sent
 ;;              scriptPubKey: (buff 1376)    ;; parse this to get an address
