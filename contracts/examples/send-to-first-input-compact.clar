@@ -10,7 +10,7 @@
     (/ sats SATS-PER-STX))
 
 ;; for compressed public keys
-(define-read-only (p2pkh-to-principal (scriptSig (buff 256)))
+(define-read-only (p2pkh-to-principal (scriptSig (buff 520)))
   (let ((pk (unwrap! (as-max-len? (unwrap! (slice? scriptSig (- (len scriptSig) u33) (len scriptSig)) none) u33) none)))
     (some (unwrap! (principal-of? pk) none))))
 
