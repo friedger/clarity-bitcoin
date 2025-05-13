@@ -10,19 +10,12 @@ import {
   tupleCV,
   uintCV,
 } from '@stacks/transactions';
-import { BitcoinRPCConfig } from 'bitcoin-tx-proof';
-import { BitcoinRPC } from 'bitcoin-tx-proof/dist/rpc';
 import { describe, expect, test } from 'vitest';
+import { txs } from './btc-stx-swap_cachedData';
 
 const accounts = simnet.getAccounts();
 const alice = accounts.get('wallet_1')!;
 const bob = accounts.get('wallet_2')!;
-
-const btcRPCConfig: BitcoinRPCConfig = {
-  url: 'http://localhost:8332',
-};
-
-const btcRPC = new BitcoinRPC(btcRPCConfig);
 
 describe('User can finalize btc-stx swap', () => {
   const txid = 'f5a993361e1db33c3b2323e39eda6c8ee70bc08da1429d0a2f81063751e55c73';
@@ -64,8 +57,8 @@ describe('User can finalize btc-stx swap', () => {
     };
 
     // get transaction object
-    const blockHash = await btcRPC.call('getblockhash', [blockHeight]);
-    const txObject = await btcRPC.call('getrawtransaction', [txid, true, blockHash]);
+    // const blockHash = await btcRPC.call('getblockhash', [blockHeight]);
+    const txObject = txs[txid]; //await btcRPC.call('getrawtransaction', [txid, true, blockHash]);
 
     const hashes = merkleProof.merkle.map(hexToBytes).map(h => h.reverse());
 

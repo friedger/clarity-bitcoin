@@ -10,21 +10,14 @@ import {
   tupleCV,
   uintCV,
 } from '@stacks/transactions';
-import { BitcoinRPCConfig } from 'bitcoin-tx-proof';
-import { BitcoinRPC } from 'bitcoin-tx-proof/dist/rpc';
 import { describe, expect, test } from 'vitest';
+import { txs } from './btc-stx-swap_cachedData';
 import { cachedProof } from './cachedProofs';
 import { proofToArray } from './conversion';
 
 const accounts = simnet.getAccounts();
 const alice = accounts.get('wallet_1')!;
 const bob = accounts.get('wallet_2')!;
-
-const btcRPCConfig: BitcoinRPCConfig = {
-  url: 'http://localhost:8332',
-};
-
-const btcRPC = new BitcoinRPC(btcRPCConfig);
 
 describe('User can finalize btc-stx swap', () => {
   const txid = 'c1de234c01ecc47906117d012865ce3dabbbb081dc0309a74dbbae45e427aadc';
@@ -52,8 +45,8 @@ describe('User can finalize btc-stx swap', () => {
     const rate = 1000;
 
     // get transaction object
-    const blockHash = await btcRPC.call('getblockhash', [blockHeight]);
-    const txObject = await btcRPC.call('getrawtransaction', [txid, true, blockHash]);
+    // const blockHash = await btcRPC.call('getblockhash', [blockHeight]);
+    const txObject = txs[txid]; //await btcRPC.call('getrawtransaction', [txid, true, blockHash]);
 
     const tx2 = tupleCV({
       version: bufferCV(intToBytes(txObject.version, false, 4).reverse()),

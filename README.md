@@ -6,6 +6,8 @@ Based on work from [Jude Nelson](https://github.com/jcnelson/clarity-bitcoin) an
 
 Deployments on mainnet:
 
+- [Version 7](https://explorer.hiro.so/txid/0xe433b35e95acfd24595e601860b4240cfaacd689ae7e7938a80c5505f186516b?chain=mainnet): Adds support transaction verification in blocks with bigger coinbase txs and for txs with more inputs and outputs
+- Version 6: Debug version of version 7
 - [Version 5](https://explorer.hiro.so/txid/0xfe25941d97a1b965b09699b622ec1d701997be62708dbac2e7a8c36a49e3e9bc?chain=mainnet): Adds support for txid generation and improves security to reject left over data
 - [Version 4](https://explorer.hiro.so/txid/0x7442d23307f2d7e9ec67eb1d63d643321cdc8bb603a375888f9c1f5bed9fb5d8?chain=mainnet): Adds support for segwit transactions
 - [Version 3](https://explorer.hiro.so/txid/0xd493b9ada8899be8773d3f55b21d300ef83ac5c0dd38c8a4dd52a295bd71d539?chain=mainnet): Uses get-burn-block-info of Clarity V2 to verify txs in flash blocks

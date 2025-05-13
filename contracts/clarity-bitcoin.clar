@@ -1,7 +1,14 @@
 ;; @contract stateless contract to verify bitcoin transaction
-;; @version 5
+;; @version 6
 
-;; version 5 adds support for txid generation and improves security
+;; version 6 increases the transactions limits
+;; - max tx size is 4096 bytes (including coinbase tx)
+;; - max 50 inputs
+;; - max 50 outputs
+;; - max size of scriptSig is 1376 bytes
+;; - max size of scriptPubKey is 1376 bytes
+;; - max 13 witness items per input
+;; - max size of witness item is 1376 bytes
 
 ;; Error codes
 (define-constant ERR-OUT-OF-BOUNDS u1)
@@ -22,9 +29,9 @@
 ;; Helper functions to parse bitcoin transactions
 ;;
 
-;; Create a list with n elments `true`. n must be smaller than 9.
+;; Create a list with n elments `true`. n must be not greater than 50.
 (define-private (bool-list-of-len (n uint))
-	(unwrap-panic (slice? (list true true true true true true true true) u0 n)))
+	(unwrap-panic (slice? (list true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true true) u0 n)))
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
@@ -130,10 +137,10 @@
 (define-read-only (read-next-txin (ignored bool)
 																	(result (response {ctx: { txbuff: (buff 4096), index: uint },
 																												remaining: uint,
-																												txins: (list 8 {outpoint: {
+																												txins: (list 50 {outpoint: {
 																																									 hash: (buff 32),
 																																									 index: uint},
-																																				scriptSig: (buff 256),      ;; just big enough to hold a 2-of-3 multisig script
+																																				scriptSig: (buff 1376),      ;; just big enough to hold a 3-of-5 multisig script
 																																				sequence: uint})}
 																							uint)))
 		(let ((state (unwrap! result result)))
@@ -151,8 +158,8 @@
 																(append (get txins state) {   outpoint: {
 																										hash: (get hashslice parsed-hash),
 																										index: (get uint32 parsed-index) },
-																				scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u256) (err ERR-VARSLICE-TOO-LONG)),
-																				sequence: (get uint32 parsed-sequence)}) u8)
+																				scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u1376) (err ERR-VARSLICE-TOO-LONG)),
+																				sequence: (get uint32 parsed-sequence)}) u50)
 														(err ERR-TOO-MANY-TXINS))}))
 							))
 
@@ -165,7 +172,7 @@
 		(let ((parsed-num-txins (try! (read-varint ctx)))
 					(num-txins (get varint parsed-num-txins))
 					(new-ctx (get ctx parsed-num-txins)))
-		 (if (> num-txins u8)
+		 (if (> num-txins u50)
 				 (err ERR-TOO-MANY-TXINS)
 				 (fold read-next-txin (bool-list-of-len num-txins) (ok { ctx: new-ctx, remaining: num-txins, txins: (list)})))))
 
@@ -176,8 +183,8 @@
 ;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout (ignored bool)
 																	 (result (response {ctx: { txbuff: (buff 4096), index: uint },
-																											txouts: (list 8 {value: uint,
-																																			 scriptPubKey: (buff 128)})}
+																											txouts: (list 50 {value: uint,
+																																			 scriptPubKey: (buff 1376)})}
 																							 uint)))
 		(let ((state (unwrap! result result))
 					(parsed-value (try! (read-uint64 (get ctx state))))
@@ -188,7 +195,7 @@
 											(as-max-len?
 													(append (get txouts state)
 															{   value: (get uint64 parsed-value),
-																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u128) (err ERR-VARSLICE-TOO-LONG))}) u8)
+																	scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u1376) (err ERR-VARSLICE-TOO-LONG))}) u50)
 											(err ERR-TOO-MANY-TXOUTS))})))
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
@@ -200,14 +207,14 @@
 		(let ((parsed-num-txouts (try! (read-varint ctx)))
 					(num-txouts (get varint parsed-num-txouts))
 					(new-ctx (get ctx parsed-num-txouts)))
-		 (if (> num-txouts u8)
+		 (if (> num-txouts u50)
 				 (err ERR-TOO-MANY-TXOUTS)
 				 (fold read-next-txout (bool-list-of-len num-txouts) (ok { ctx: new-ctx, txouts: (list)})))))
 
 ;; Read the stack item of the witness field, and update the index in ctx to point to the next item.
 (define-read-only (read-next-item (ignored bool)
 																	 (result (response {ctx: { txbuff: (buff 4096), index: uint },
-																												 items: (list 8 (buff 128))}
+																												 items: (list 13 (buff 1376))}
 																							 uint)))
 		(let ((state (unwrap! result result))
 					(parsed-item (try! (read-varslice (get ctx state))))
@@ -215,13 +222,13 @@
 				(ok {ctx: new-ctx,
 						items: (unwrap!
 											(as-max-len?
-													(append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u128) (err ERR-VARSLICE-TOO-LONG))) u8)
+													(append (get items state) (unwrap! (as-max-len? (get varslice parsed-item) u1376) (err ERR-VARSLICE-TOO-LONG))) u13)
 											(err ERR-TOO-MANY-WITNESSES))})))
 
 ;; Read the next witness data, and update the index in ctx to point to the next witness.
 (define-read-only (read-next-witness (ignored bool)
 	(result (response
-		{ ctx: {txbuff: (buff 4096), index: uint}, witnesses: (list 8 (list 8 (buff 128))) } uint)))
+		{ ctx: {txbuff: (buff 4096), index: uint}, witnesses: (list 50 (list 13 (buff 1376))) } uint)))
 	(let ((state (unwrap! result result))
 				(parsed-num-items (try! (read-varint (get ctx state))))
 				(ctx (get ctx parsed-num-items))
@@ -230,17 +237,17 @@
 				;; read all stack items for current txin and add to witnesses.
 				(let ((parsed-items (try! (fold read-next-item (bool-list-of-len varint) (ok { ctx: ctx, items: (list)})))))
 						(ok {
-							witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get items parsed-items)) u8)),
+							witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (get items parsed-items)) u50)),
 							ctx: (get ctx parsed-items)
 						}))
 				;; txin has not witness data, add empty list to witnesses.
 				(ok {
-					witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u8)),
+					witnesses: (unwrap-panic (as-max-len? (append (get witnesses state) (list)) u50)),
 					ctx: ctx
 				}))))
 
 ;; Read all witness data in a transaction.  Update the index to point to the end of the tx, if all goes well.
-;; Returns (ok {witnesses: (list 8 (list 8 (buff 128))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
+;; Returns (ok {witnesses: (list 50 (list 13 (buff 1376))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 ;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
 ;; Returns (err ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
@@ -248,7 +255,7 @@
 	(fold read-next-witness (bool-list-of-len num-txins) (ok { ctx: ctx, witnesses: (list) })))
 
 ;;
-;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; Parses a Bitcoin transaction, with up to 50 inputs and 50 outputs, with scriptSigs of up to 1376 bytes each, and with scriptPubKeys up to 1376 bytes.
 ;; It will also calculate and return the TXID if calculate-txid is set to true.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
@@ -256,21 +263,21 @@
 ;;      segwit-marker: uint,
 ;;      segwit-version: uint,
 ;;      txid: (optional (buff 32))
-;;      ins: (list 8
+;;      ins: (list 50
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
 ;;                  hash: (buff 32),
 ;;                  index: uint
 ;;              },
-;;              scriptSig: (buff 256),      ;; spending condition script
+;;              scriptSig: (buff 1376),      ;; spending condition script
 ;;              sequence: uint
 ;;          }),
-;;      outs: (list 8
+;;      outs: (list 50
 ;;          {
 ;;              value: uint,                ;; satoshis sent
-;;              scriptPubKey: (buff 128)    ;; parse this to get an address
+;;              scriptPubKey: (buff 1376)    ;; parse this to get an address
 ;;          }),
-;;      witnesses: (list 8 (list 8 (buff 128))),
+;;      witnesses: (list 50 (list 13 (buff 1376))),
 ;;      locktime: uint
 ;; })
 ;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
@@ -309,23 +316,23 @@
 		})))
 
 ;;
-;; Parses a Bitcoin transaction, with up to 8 inputs and 8 outputs, with scriptSigs of up to 256 bytes each, and with scriptPubKeys up to 128 bytes.
+;; Parses a Bitcoin transaction, with up to 50 inputs and 50 outputs, with scriptSigs of up to 1376 bytes each, and with scriptPubKeys up to 1376 bytes.
 ;; Returns a tuple structured as follows on success:
 ;; (ok {
 ;;      version: uint,                      ;; tx version
-;;      ins: (list 8
+;;      ins: (list 50
 ;;          {
 ;;              outpoint: {                 ;; pointer to the utxo this input consumes
 ;;                  hash: (buff 32),
 ;;                  index: uint
 ;;              },
-;;              scriptSig: (buff 256),      ;; spending condition script
+;;              scriptSig: (buff 1376),      ;; spending condition script
 ;;              sequence: uint
 ;;          }),
-;;      outs: (list 8
+;;      outs: (list 50
 ;;          {
 ;;              value: uint,                ;; satoshis sent
-;;              scriptPubKey: (buff 128)    ;; parse this to get an address
+;;              scriptPubKey: (buff 1376)    ;; parse this to get an address
 ;;          }),
 ;;      locktime: uint
 ;; })
@@ -454,15 +461,15 @@
 
 ;; Gets the scriptPubKey in the last output that follows the 0x6a24aa21a9ed pattern regardless of its content
 ;; as per BIP-0141 (https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure)
-(define-read-only (get-commitment-scriptPubKey (outs (list 8 { value: uint, scriptPubKey: (buff 128) })))
+(define-read-only (get-commitment-scriptPubKey (outs (list 50 { value: uint, scriptPubKey: (buff 1376) })))
 	(fold inner-get-commitment-scriptPubKey outs 0x))
 
-(define-read-only (inner-get-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 128) }) (result (buff 128)))
+(define-read-only (inner-get-commitment-scriptPubKey (out { value: uint, scriptPubKey: (buff 1376) }) (result (buff 1376)))
 	(let ((commitment (get scriptPubKey out)))
 		(if (is-commitment-pattern commitment) commitment result)))
 
 ;; Returns false, if scriptPubKey does not have the commitment prefix.
-(define-read-only (is-commitment-pattern (scriptPubKey (buff 128)))
+(define-read-only (is-commitment-pattern (scriptPubKey (buff 1376)))
 	(asserts! (is-eq (unwrap! (slice? scriptPubKey u0 u6) false) 0x6a24aa21a9ed) false))
 
 ;;
@@ -543,13 +550,13 @@
 	(wproof (list 14 (buff 32)))
 	(witness-merkle-root (buff 32))
 	(witness-reserved-value (buff 32))
-	(ctx (buff 1024))
-	(cproof (list 14 (buff 32))))
+	(cb-tx (buff 4096))
+	(cb-proof (list 14 (buff 32))))
 	(begin
 		;; verify that the coinbase tx is correct
-		(try! (was-tx-mined-compact height ctx header { tx-index: u0, hashes: cproof, tree-depth: tree-depth }))
+		(try! (was-tx-mined-compact height cb-tx header { tx-index: u0, hashes: cb-proof, tree-depth: tree-depth }))
 		(let (
-			(witness-out (get-commitment-scriptPubKey (get outs (try! (parse-tx ctx)))))
+			(witness-out (get-commitment-scriptPubKey (get outs (try! (parse-tx cb-tx)))))
 			(final-hash (sha256 (sha256 (concat witness-merkle-root witness-reserved-value))))
 			(reversed-wtxid (get-reversed-txid wtx))
 			(wtxid (reverse-buff32 reversed-wtxid))
