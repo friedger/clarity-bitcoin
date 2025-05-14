@@ -47,19 +47,18 @@ describe('User can finalize btc-stx swap', () => {
     // get transaction object
     // const blockHash = await btcRPC.call('getblockhash', [blockHeight]);
     const txObject = txs[txid]; //await btcRPC.call('getrawtransaction', [txid, true, blockHash]);
-
     const tx2 = tupleCV({
-      version: bufferCV(intToBytes(txObject.version, false, 4).reverse()),
-      locktime: bufferCV(intToBytes(txObject.locktime, false, 4).reverse()),
+      version: bufferCV(intToBytes(txObject.version, 4).reverse()),
+      locktime: bufferCV(intToBytes(txObject.locktime, 4).reverse()),
       ins: listCV(
         txObject.vin.map((input: any) => {
           return tupleCV({
             outpoint: tupleCV({
               hash: bufferCV(hexToBytes(input.txid).reverse()),
-              index: bufferCV(intToBytes(input.vout, false, 4).reverse()),
+              index: bufferCV(intToBytes(input.vout, 4).reverse()),
             }),
             scriptSig: bufferCV(hexToBytes(input.scriptSig.hex)),
-            sequence: bufferCV(intToBytes(input.sequence, false, 4).reverse()),
+            sequence: bufferCV(intToBytes(input.sequence, 4).reverse()),
           });
         })
       ),
