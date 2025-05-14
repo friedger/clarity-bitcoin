@@ -13,8 +13,8 @@
   "license": "MIT",
   "prettier": "@stacks/prettier-config",
   "dependencies": {
-    "@hirosystems/clarinet-sdk": "3.0.1",
-    "@hirosystems/clarinet-sdk-wasm": "3.0.1",
+    "@hirosystems/clarinet-sdk": "3.0.2",
+    "@hirosystems/clarinet-sdk-wasm": "3.0.2",
     "@noble/hashes": "^1.8.0",
     "@stacks/common": "^7.0.2",
     "@stacks/rendezvous": "^0.7.0",
