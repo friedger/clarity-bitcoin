@@ -65,7 +65,7 @@ describe('User can finalize btc-stx swap', () => {
       outs: listCV(
         txObject.vout.map((output: any) => {
           return tupleCV({
-            value: bufferCV(intToBytes(Math.round(output.value * 100_000_000), false, 8).reverse()),
+            value: bufferCV(intToBytes(Math.round(output.value * 100_000_000), 8).reverse()),
             scriptPubKey: bufferCV(hexToBytes(output.scriptPubKey.hex)),
           });
         })
