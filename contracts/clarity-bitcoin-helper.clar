@@ -58,7 +58,7 @@
       scriptSig: (buff 1376),
       sequence: (buff 4),
     })
-    (result (buff 4096))
+    (result (buff 1385))
   )
   (unwrap-panic (as-max-len?
     (concat
@@ -70,7 +70,7 @@
       )
       (get sequence in)
     )
-    u4096
+    u1385
   ))
 )
 
@@ -95,11 +95,11 @@
       value: (buff 8),
       scriptPubKey: (buff 1376),
     })
-    (result (buff 4096))
+    (result (buff 1385))
   )
   (unwrap-panic (as-max-len?
     (concat (concat result (get value out)) (concat-var (get scriptPubKey out)))
-    u4096
+    u1385
   ))
 )
 

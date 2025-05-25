@@ -58,13 +58,12 @@ export function expectHeaderObject(
 
 export function expectTxObject(result: ResponseCV, expectedTxObject: TxObject) {
   expect(result.type).toBe(ClarityType.ResponseOk);
-  const resultTxObject = (result.value as TupleCV).data;
-
+  const resultTxObject = (result.value as TupleCV).value;
   expect(resultTxObject.version).toBeUint(expectedTxObject.version);
   expect(resultTxObject.locktime).toBeUint(expectedTxObject.locktime);
 
   for (let index = 0; index < expectedTxObject.ins.length; index++) {
-    expect((resultTxObject.ins as ListCV).list[index]).toBeTuple({
+    expect((resultTxObject.ins as ListCV).value[index]).toBeTuple({
       outpoint: Cl.tuple({
         hash: Cl.buffer(hexToBytes(expectedTxObject.ins[index].outpoint.hash)),
         index: Cl.uint(expectedTxObject.ins[index].outpoint.index),
@@ -75,7 +74,7 @@ export function expectTxObject(result: ResponseCV, expectedTxObject: TxObject) {
   }
 
   for (let index = 0; index < expectedTxObject.outs.length; index++) {
-    expect((resultTxObject.outs as ListCV).list[index]).toBeTuple({
+    expect((resultTxObject.outs as ListCV).value[index]).toBeTuple({
       scriptPubKey: Cl.buffer(hexToBytes(expectedTxObject.outs[index].scriptPubKey)),
       value: Cl.uint(expectedTxObject.outs[index].value),
     });

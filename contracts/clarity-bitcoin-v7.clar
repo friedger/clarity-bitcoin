@@ -679,34 +679,9 @@
   )
 )
 
-;; MOCK section
-(define-constant DEBUG-MODE true)
-
-(define-map mock-burnchain-header-hashes
-  uint
-  (buff 32)
-)
-
-(define-public (mock-add-burnchain-block-header-hash
-    (burn-height uint)
-    (hash (buff 32))
-  )
-  (ok (map-set mock-burnchain-header-hashes burn-height hash))
-)
-
 (define-read-only (get-bc-h-hash (bh uint))
-  (if DEBUG-MODE
-    (match (map-get? mock-burnchain-header-hashes bh)
-      mock-data
-      (some mock-data)
-      ;; fall back to remote data if no mock data available
-      (get-burn-block-info? header-hash bh)
-    )
     (get-burn-block-info? header-hash bh)
-  )
 )
-
-;; END MOCK section
 
 ;; Verify that a block header hashes to a burnchain header hash at a given height.
 ;; Returns true if so; false if not.
