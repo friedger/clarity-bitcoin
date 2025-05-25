@@ -20,15 +20,15 @@
   (stx-transfer? amount sender recipient))
 
 
-(define-read-only (read-uint32 (ctx { txbuff: (buff 4096), index: uint}))
+(define-read-only (read-uint64 (ctx { txbuff: (buff 4096), index: uint}))
 		(let ((data (get txbuff ctx))
 					(base (get index ctx)))
-				(ok {uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4))),
-						 ctx: { txbuff: data, index: (+ u4 base)}})))
+				(ok {uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8))),
+						 ctx: { txbuff: data, index: (+ u8 base)}})))
 
 (define-private (find-out (entry {scriptPubKey: (buff 128), value: (buff 8)}) (result {pubscriptkey: (buff 40), out: (optional {scriptPubKey: (buff 128), value: uint})}))
   (if (is-eq (get scriptPubKey entry) (get pubscriptkey result))
-    (merge result {out: (some {scriptPubKey: (get scriptPubKey entry), value: (get uint32 (unwrap-panic (read-uint32 {txbuff: (get value entry), index: u0})))})})
+    (merge result {out: (some {scriptPubKey: (get scriptPubKey entry), value: (get uint64 (unwrap-panic (read-uint64 {txbuff: (get value entry), index: u0})))})})
     result))
 
 
