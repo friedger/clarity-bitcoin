@@ -79,6 +79,6 @@ trusted_caller = false
 callee_filter = false
 
 [repl.remote_data]
-enabled = true
+enabled = false
 api_url = "https://api.hiro.so"
 initial_height = 595050
