@@ -1,4 +1,8 @@
-import { sha256 } from '@noble/hashes/sha256';
+/**
+ * @vitest-environment clarinet
+ * @vitest-environment-options { "manifestPath": "./Clarinet.remote.toml", "initBeforeEach": true }
+ */
+import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, hexToBytes } from '@stacks/common';
 import { Cl, cvToString } from '@stacks/transactions';
 import * as bitcoinjs from 'bitcoinjs-lib';
@@ -24,9 +28,10 @@ const blockHeader =
 describe('Bitcoin library with remote data', () => {
   it('Ensure that remote data is as expected', () => {
     const bbh = simnet.execute('burn-block-height');
-    expect(bbh.result).toBeUint(blockHeight);
+    // deploying the Clarity 6 (epoch 4.0) contracts advances the fork tip past the proof block
+    expect(bbh.result).toBeUint(blockHeight + 2);
 
-    var bbhh = simnet.execute('(get-burn-block-info? header-hash burn-block-height)');
+    var bbhh = simnet.execute(`(get-burn-block-info? header-hash u${blockHeight})`);
     expect(bbhh.result).toBeSome(Cl.bufferFromHex(bitcoinBlockHeaderHash));
   });
 
@@ -87,7 +92,7 @@ describe('Bitcoin library with remote data', () => {
       {
         hashes: cbHashes,
         txIndex: 0,
-        treeDepth: cbHashes.length,
+        txCount: manualProofData.txCount,
       },
       deployer
     );
@@ -101,7 +106,7 @@ describe('Bitcoin library with remote data', () => {
       txProof.blockHeader, //headerHex,
       {
         hashes,
-        treeDepth: hashes.length,
+        txCount: manualProofData.txCount,
         txIndex: 0,
       },
       deployer
@@ -140,28 +145,33 @@ describe('Bitcoin library with remote data', () => {
     expect(txProof.transaction).toBe(manualProofData.txHex);
     expect(txProof.blockHeader).toBe(blockHeader);
     expect(txProof.txIndex).toBe(manualProofData.proof.txIndex);
-    expect(txProof.merkleProofDepth).toBe(manualProofData.proof.treeDepth);
+    expect(txProof.merkleProofDepth).toBe(manualProofData.proof.hashes.length);
     expect(txProof.witnessReservedValue).toBe(manualProofData.witnessReservedValue);
     expect(txProof.legacyCoinbaseTxHex).toBe(manualProofData.legacyCoinbaseTxHex);
 
     // 4. verify segwit tx was mined
+    // locate the BIP-141 witness-commitment output (scriptPubKey prefixed 6a24aa21a9ed)
+    const coinbaseCommitmentVout = bitcoinjs.Transaction.fromHex(
+      txProof.legacyCoinbaseTxHex
+    ).outs.findIndex(o => bytesToHex(o.script).startsWith('6a24aa21a9ed'));
     const result = wasSegwitTxMinedCompact(
       txProof.blockHeight,
       txProof.transaction,
       txProof.blockHeader,
       txProof.txIndex,
-      txProof.merkleProofDepth,
+      manualProofData.txCount,
       proofToArray(txProof.witnessMerkleProof),
       txProof.witnessMerkleRoot,
       txProof.witnessReservedValue,
       txProof.legacyCoinbaseTxHex,
+      coinbaseCommitmentVout,
       proofToArray(txProof.coinbaseMerkleProof),
       deployer
     );
 
-    // calculate expected wtxid
+    // calculate expected wtxid (bitcoinjs-lib v7 returns Uint8Array, not Buffer)
     const bitcoinjsTx = bitcoinjs.Transaction.fromHex(manualProofData.txHex);
-    const expectedWtxid = bitcoinjsTx.getHash(true).reverse().toString('hex');
+    const expectedWtxid = bytesToHex(Uint8Array.from(bitcoinjsTx.getHash(true)).reverse());
     expect(result.result).toBeOk(Cl.buffer(hexToBytes(expectedWtxid)));
   }, 100_000); // using bitcoinTxProof might take longer
 });

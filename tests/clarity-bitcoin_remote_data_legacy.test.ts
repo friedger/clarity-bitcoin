@@ -1,3 +1,7 @@
+/**
+ * @vitest-environment clarinet
+ * @vitest-environment-options { "manifestPath": "./Clarinet.remote.toml", "initBeforeEach": true }
+ */
 import { hexToBytes } from '@stacks/common';
 import { Cl } from '@stacks/transactions';
 import { describe, expect, it } from 'vitest';
@@ -21,9 +25,10 @@ const wMerkleRoot = 'd46461bd8a483c8ad0acaa9d72e54b2c04bfa7c19dc37a7b0805c2f959e
 describe('Bitcoin library with remote data', () => {
   it('Ensure that remote data is as expected', () => {
     const bbh = simnet.execute('burn-block-height');
-    expect(bbh.result).toBeUint(bitcoinHeight);
+    // deploying the Clarity 6 (epoch 4.0) contracts advances the fork tip past the proof block
+    expect(bbh.result).toBeUint(bitcoinHeight + 2);
 
-    var bbhh = simnet.execute('(get-burn-block-info? header-hash burn-block-height)');
+    var bbhh = simnet.execute(`(get-burn-block-info? header-hash u${bitcoinHeight})`);
     expect(bbhh.result).toBeSome(Cl.bufferFromHex(bitcoinBlockHeaderHash));
   });
 
@@ -66,12 +71,13 @@ describe('Bitcoin library with remote data', () => {
         '51a1c02147ab62b9a5f67582536e4e7913d944660722b8f78a83158440752c85',
       ],
       pos: 6,
+      tx_count: 803, // number of transactions in block 883230
     };
 
     const proof = {
       txIndex: merkleProof.pos,
       hashes: merkleProof.merkle.map(hexToBytes).map(h => h.reverse()),
-      treeDepth: merkleProof.merkle.length,
+      txCount: merkleProof.tx_count,
     };
 
     /**

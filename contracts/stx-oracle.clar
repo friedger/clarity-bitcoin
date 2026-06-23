@@ -1,4 +1,4 @@
-(define-constant block-rewards (list
+(define-constant BLOCK_REWARDS (list
   {
     bh: u666050,
     rewards: u2000,
@@ -19,7 +19,7 @@
 
 (define-read-only (get-rewards (bh uint))
   (get rewards-at-bh
-    (fold get-rewards-internal block-rewards {
+    (fold get-rewards-internal BLOCK_REWARDS {
       bh: bh,
       rewards-at-bh: u0,
     })

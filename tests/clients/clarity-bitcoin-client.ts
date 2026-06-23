@@ -1,11 +1,7 @@
-import { hexToBytes } from '@noble/hashes/utils';
+import { hexToBytes } from '@noble/hashes/utils.js';
 import { Cl } from '@stacks/transactions';
 
 const contractName = 'clarity-bitcoin';
-
-export const Error = {
-  ERR_PROOF_TOO_SHORT: 8,
-};
 
 export function parseTx(tx: string, deployer: string) {
   return simnet.callReadOnlyFn(contractName, 'parse-tx', [Cl.bufferFromHex(tx)], deployer);
@@ -35,21 +31,23 @@ export function verifyMerkleProof(
   merkleProof: {
     hashes: Uint8Array[];
     txIndex: number;
-    treeDepth: number;
+    txCount: number;
   },
   deployer: string
 ) {
   const reverseTxId = txId.reverse();
+  // verify-merkle-proof is a Clarity 6 native builtin, not a contract function.
+  // The `helper` contract exposes it via the tuple-proof `verify-mp` wrapper.
   return simnet.callReadOnlyFn(
-    contractName,
-    'verify-merkle-proof',
+    'helper',
+    'verify-mp',
     [
       Cl.buffer(reverseTxId),
       Cl.buffer(merkleRoot),
       Cl.tuple({
         hashes: Cl.list(merkleProof.hashes.map(h => Cl.buffer(h))),
         'tx-index': Cl.uint(merkleProof.txIndex),
-        'tree-depth': Cl.uint(merkleProof.treeDepth),
+        'tx-count': Cl.uint(merkleProof.txCount),
       }),
     ],
     deployer
@@ -63,7 +61,7 @@ export function wasTxMinedCompact(
   merkleProof: {
     hashes: Uint8Array[];
     txIndex: number;
-    treeDepth: number;
+    txCount: number;
   },
   sender: string
 ) {
@@ -77,7 +75,7 @@ export function wasTxMinedCompact(
       Cl.tuple({
         hashes: Cl.list(merkleProof.hashes.map(h => Cl.buffer(h))),
         'tx-index': Cl.uint(merkleProof.txIndex),
-        'tree-depth': Cl.uint(merkleProof.treeDepth),
+        'tx-count': Cl.uint(merkleProof.txCount),
       }),
     ],
     sender
@@ -89,11 +87,12 @@ export function wasSegwitTxMinedCompact(
   txHex: string,
   headerHex: string,
   txIndex: number,
-  treeDepth: number,
+  txCount: number,
   wproof: Uint8Array[],
   witnessMerkleRoot: string,
   witnessReservedValue: string,
   coinbaseTxHex: string,
+  coinbaseCommitmentVout: number,
   coinbaseProof: Uint8Array[],
   sender: string
 ) {
@@ -105,11 +104,12 @@ export function wasSegwitTxMinedCompact(
       Cl.buffer(hexToBytes(txHex)),
       Cl.buffer(hexToBytes(headerHex)),
       Cl.uint(txIndex),
-      Cl.uint(treeDepth),
+      Cl.uint(txCount),
       Cl.list(wproof.map(Cl.buffer)),
       Cl.buffer(hexToBytes(witnessMerkleRoot)),
       Cl.buffer(hexToBytes(witnessReservedValue)),
       Cl.buffer(hexToBytes(coinbaseTxHex)),
+      Cl.uint(coinbaseCommitmentVout),
       Cl.list(coinbaseProof.map(Cl.buffer)),
     ],
     sender

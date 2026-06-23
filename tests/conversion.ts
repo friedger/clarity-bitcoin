@@ -1,4 +1,4 @@
-import { hexToBytes } from '@noble/hashes/utils';
+import { hexToBytes } from '@noble/hashes/utils.js';
 
 export function proofToArray(proof: string) {
   const cbChunks = proof.match(/.{1,64}/g);

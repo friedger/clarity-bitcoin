@@ -1,5 +1,9 @@
-import { tx } from '@hirosystems/clarinet-sdk';
-import { hexToBytes } from '@noble/hashes/utils';
+/**
+ * @vitest-environment clarinet
+ * @vitest-environment-options { "manifestPath": "./Clarinet.remote.toml", "initBeforeEach": true }
+ */
+import { tx } from '@stacks/clarinet-sdk';
+import { hexToBytes } from '@noble/hashes/utils.js';
 import { intToBytes } from '@stacks/common';
 import {
   boolCV,
@@ -34,9 +38,10 @@ describe('User can finalize btc-stx swap', () => {
 
   test('Ensure that remote data is as expected', () => {
     const bbh = simnet.execute('burn-block-height');
-    expect(bbh.result).toBeUint(blockHeight);
+    // deploying the Clarity 6 (epoch 4.0) contracts advances the fork tip past the proof block
+    expect(bbh.result).toBeUint(blockHeight + 2);
 
-    var bbhh = simnet.execute('(get-burn-block-info? header-hash burn-block-height)');
+    var bbhh = simnet.execute(`(get-burn-block-info? header-hash u${blockHeight})`);
     expect(bbhh.result).toBeSome(bufferCV(hexToBytes(bitcoinBlockHeaderHash)));
   });
 
@@ -114,11 +119,12 @@ describe('User can finalize btc-stx swap', () => {
       // (witness-data (buff 1650))
       // (header (buff 80))
       // (tx-index uint)
-      // (tree-depth uint)
+      // (tx-count uint)
       // (wproof (list 14 (buff 32)))
       // (witness-merkle-root (buff 32))
       // (witness-reserved-value (buff 32))
       // (ctx (buff 1024))
+      // (cb-commitment-vout uint)
       // (cproof (list 14 (buff 32))))
 
       tx.callPublicFn(
@@ -131,11 +137,12 @@ describe('User can finalize btc-stx swap', () => {
           bufferCV(new Uint8Array(witnessData)),
           bufferCV(hexToBytes(headerHex)),
           uintCV(cachedProof.txIndex),
-          uintCV(cachedProof.merkleProofDepth),
+          uintCV(803), // tx-count: number of transactions in block 883230
           listCV(proofToArray(cachedProof.witnessMerkleProof).map(bufferCV)),
           bufferCV(hexToBytes(cachedProof.witnessMerkleRoot)),
           bufferCV(hexToBytes(cachedProof.witnessReservedValue)),
           bufferCV(hexToBytes(cachedProof.legacyCoinbaseTxHex)),
+          uintCV(1), // cb-commitment-vout: BIP-141 commitment output index in the coinbase
           listCV(proofToArray(cachedProof.coinbaseMerkleProof).map(bufferCV)),
         ],
         bob

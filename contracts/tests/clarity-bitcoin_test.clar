@@ -1,5 +1,5 @@
-(define-constant test-contract-principal (as-contract tx-sender))
-(define-constant zero-address 'SP000000000000000000002Q6VF78)
+(define-constant TEST_CONTRACT_PRINCIPAL (as-contract tx-sender))
+(define-constant ZERO_ADDRESS 'SP000000000000000000002Q6VF78)
 
 (define-public (add-burnchain-block-header-hash
     (burn-height uint)
@@ -56,7 +56,7 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u3,
-        tree-depth: u2,
+        tx-count: u4,
         hashes: (list
           0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8
           0xc4e620f495d8a30d8d919fc148fe55c8873b4aefe43116bc6ef895aa51572215
@@ -84,7 +84,7 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u8,
-        tree-depth: u7,
+        tx-count: u81,
         hashes: (list
           0xbcbc1fe72ca5d67f74099ac4f851cd6a266d2a42fa6c9a6244b11adf6a2f13fb
           0x4348ff70e7b2132e0b6044f960ec25a5f7966f5d6182827c9359039a7654218e
@@ -116,7 +116,7 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u1,
-        tree-depth: u7,
+        tx-count: u91,
         hashes: (list
           0x6ef3bf4c1eab5389170584545683660fa601f38f1216bb6357a9b01560a8f884
           0x33274cc92f8b980272688e01114cc2944fb661d1aa3a658c7d29675a46a4d5ad
@@ -147,7 +147,7 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u0,
-        tree-depth: u1,
+        tx-count: u1,
         hashes: (list),
       })))
       (asserts! (is-eq result (ok txid)) (err "expected txid"))
@@ -170,7 +170,7 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u0,
-        tree-depth: u2,
+        tx-count: u3,
         hashes: (list
           0x3d52480061d7634fa8060430cf86d8de3f577499a2056f5ff80cc36918a78dcc
           0x41dd33b4cffe074cc8263f98da7c81006521eb2cc8712028fa491efed619cffb
@@ -199,7 +199,7 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u3,
-        tree-depth: u2,
+        tx-count: u4,
         hashes: (list
           0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8
           0xc4e620f495d8a30d8d919fc148fe55c8873b4aefe43116bc6ef895aa51572215
@@ -228,14 +228,14 @@
     (let ((result (contract-call? .clarity-bitcoin was-tx-mined-compact
         burnchain-block-height raw-tx raw-block-header {
         tx-index: u3,
-        tree-depth: u2,
+        tx-count: u4,
         hashes: (list
           0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8
           0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8
         ),
       })))
-      (asserts! (is-eq result (err ERR-INVALID-MERKLE-PROOF))
-        (err "expected ERR-INVALID-MERKLE-PROOF")
+      (asserts! (is-eq result ERR_INVALID_MERKLE_PROOF)
+        (err "expected ERR_INVALID_MERKLE_PROOF")
       )
       (ok true)
     )
@@ -259,10 +259,10 @@
 ;;       raw-tx
 ;;       raw-block-header
 ;;       {tx-index: u3,
-;;       tree-depth: u2,
+;;       tx-count: u4,
 ;;       hashes: (list 0x3313f803502a6f9a89ac09ff9e8f9d8032aa7c35cc6d1679487622e944c8ccb8 0xc4e620f495d8a30d8d919fc148fe55c8873b4aefe43116bc6ef895aa51572215)}
 ;;     )))
-;;     (asserts! (is-eq result (err ERR-HEADER-HEIGHT-MISMATCH)) (err "expected ERR-HEADER-HEIGHT-MISMATCH"))
+;;     (asserts! (is-eq result ERR_HEADER_HEIGHT_MISMATCH) (err "expected ERR_HEADER_HEIGHT_MISMATCH"))
 ;;     (ok true))
 ;;   )
 ;; )
@@ -276,8 +276,8 @@
       ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
     )
     (let ((result (contract-call? .clarity-bitcoin parse-tx raw-tx)))
-      (asserts! (is-eq result (err ERR-LEFTOVER-DATA))
-        (err "expected ERR-LEFTOVER-DATA")
+      (asserts! (is-eq result ERR_LEFTOVER_DATA)
+        (err "expected ERR_LEFTOVER_DATA")
       )
       (ok true)
     )
@@ -297,15 +297,15 @@
 ;;   )
 ;; )
 
-(define-constant ERR-OUT-OF-BOUNDS u1)
-(define-constant ERR-TOO-MANY-TXINS u2)
-(define-constant ERR-TOO-MANY-TXOUTS u3)
-(define-constant ERR-VARSLICE-TOO-LONG u4)
-(define-constant ERR-BAD-HEADER u5)
-(define-constant ERR-HEADER-HEIGHT-MISMATCH u6)
-(define-constant ERR-INVALID-MERKLE-PROOF u7)
-(define-constant ERR-PROOF-TOO-SHORT u8)
-(define-constant ERR-TOO-MANY-WITNESSES u9)
-(define-constant ERR-INVALID-COMMITMENT u10)
-(define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
-(define-constant ERR-LEFTOVER-DATA u13)
+(define-constant ERR_OUT_OF_BOUNDS (err u1))
+(define-constant ERR_TOO_MANY_TXINS (err u2))
+(define-constant ERR_TOO_MANY_TXOUTS (err u3))
+(define-constant ERR_VARSLICE_TOO_LONG (err u4))
+(define-constant ERR_BAD_HEADER (err u5))
+(define-constant ERR_HEADER_HEIGHT_MISMATCH (err u6))
+(define-constant ERR_INVALID_MERKLE_PROOF (err u7))
+(define-constant ERR_PROOF_TOO_SHORT (err u8))
+(define-constant ERR_TOO_MANY_WITNESSES (err u9))
+(define-constant ERR_INVALID_COMMITMENT (err u10))
+(define-constant ERR_WITNESS_TX_NOT_IN_COMMITMENT (err u11))
+(define-constant ERR_LEFTOVER_DATA (err u13))

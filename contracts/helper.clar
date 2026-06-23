@@ -13,18 +13,21 @@
   (ok (contract-call? .clarity-bitcoin verify-block-header header bh))
 )
 
-(define-public (verify-mp
+;; verify-merkle-proof is a Clarity 6 native builtin, so it cannot be reached through
+;; contract-call?. Call it directly. The proof carries the block's real tx-count, which
+;; the native needs for Bitcoin's "duplicate the last node on odd rows" rule.
+(define-read-only (verify-mp
     (reverse-tx-id (buff 32))
     (merkle-root (buff 32))
     (proof {
       tx-index: uint,
       hashes: (list 14 (buff 32)),
-      tree-depth: uint,
+      tx-count: uint,
     })
   )
-  (contract-call? .clarity-bitcoin verify-merkle-proof reverse-tx-id merkle-root
-    proof
-  )
+  (ok (verify-merkle-proof reverse-tx-id merkle-root (get tx-index proof)
+    (get tx-count proof) (get hashes proof)
+  ))
 )
 
 (define-public (was-tx-mined-compact
@@ -34,7 +37,7 @@
     (proof {
       tx-index: uint,
       hashes: (list 14 (buff 32)),
-      tree-depth: uint,
+      tx-count: uint,
     })
   )
   (contract-call? .clarity-bitcoin was-tx-mined-compact height tx header proof)

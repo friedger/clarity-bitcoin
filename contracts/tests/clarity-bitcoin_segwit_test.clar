@@ -1,5 +1,5 @@
-(define-constant test-contract-principal (as-contract tx-sender))
-(define-constant zero-address 'SP000000000000000000002Q6VF78)
+(define-constant TEST_CONTRACT_PRINCIPAL (as-contract tx-sender))
+(define-constant ZERO_ADDRESS 'SP000000000000000000002Q6VF78)
 
 (define-public (add-burnchain-block-header-hash
     (burn-height uint)
@@ -105,12 +105,12 @@
       (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
     )
     (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
-        burnchain-block-height raw-tx raw-block-header u3 u2
+        burnchain-block-height raw-tx raw-block-header u3 u4
         (list
           0xb2d7ec769ce60ebc0c8fb9cc37f0ad7481690fc176b82c8d17d3c05da80fea6b
           0x122f3217765b6e8f3163f6725d4aa3d303e4ffe4b99a5e85fb4ff91a026c17a8
         )
-        witness-merkle-root witness-reserved-data raw-coinbase-tx
+        witness-merkle-root witness-reserved-data raw-coinbase-tx u1
         (list
           0x5f4a8858a112953111d5f94605c4dd8d04690eeeb9ffe2f435475d95943f2f3f
           0x3348bf81aae79941662a902206b3ed2d285713668ab134c9e113548daea596fc
@@ -143,7 +143,7 @@
       (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
     )
     (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
-        burnchain-block-height raw-tx raw-block-header u8 u7
+        burnchain-block-height raw-tx raw-block-header u8 u81
         (list
           0xbcbc1fe72ca5d67f74099ac4f851cd6a266d2a42fa6c9a6244b11adf6a2f13fb
           0xec7eee1209489f80c4a5df2a90f26ee0ba0838be6f00442e3e0ab9d095865b45
@@ -153,7 +153,7 @@
           0x04889c3c93e70474fe0724f5270e26d91c974fa7b642703286903350480e2281
           0x762dd8d1161d1d32a79c98f6273b6feb50405446e861db0f32c7403a8bb310b2
         )
-        witness-merkle-root witness-reserved-data raw-coinbase-tx
+        witness-merkle-root witness-reserved-data raw-coinbase-tx u1
         (list
           0x012e8988aa58e53ac700c22257237716f642aea5ad45c3f6420eb010bf2b37f9
           0x10b71df80cc37bd92c746690a980a7f4187e6dbf8b973ac938f1b1b9d1ef25b6
@@ -191,7 +191,7 @@
       (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
     )
     (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
-        burnchain-block-height raw-tx raw-block-header u1 u7
+        burnchain-block-height raw-tx raw-block-header u1 u91
         (list
           0x0000000000000000000000000000000000000000000000000000000000000000
           0x71f824a016ae0f58a01cb8a4aafb910c6013666640f43b745adc87dcc9118a66
@@ -201,7 +201,7 @@
           0x8527cd4ff222ff5010726219744a19522e2d016873d4a8ca3bfa984f32cf7355
           0x83fbd3b472c7e7285ad25fd40edaf658acef8756aecf32a115d98fd07d006af9
         )
-        witness-merkle-root witness-reserved-data raw-coinbase-tx
+        witness-merkle-root witness-reserved-data raw-coinbase-tx u1
         (list
           0xfc63a531dfb491d91ddf08dfe0d5b2406a97be193ae90fa44e2fca0b8a30d02f
           0x33274cc92f8b980272688e01114cc2944fb661d1aa3a658c7d29675a46a4d5ad
@@ -240,11 +240,15 @@
     )
     (match (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
       burnchain-block-height raw-tx raw-block-header u0 u1 (list)
-      witness-merkle-root witness-reserved-data raw-coinbase-tx
+      witness-merkle-root witness-reserved-data raw-coinbase-tx u1
       (list 0x12b32c51b0b4f3e42b234e791e6b851874cbe200aa7729b31f7bb96ee1b9647b)
     )
-      ok-res (err u1)
-      err-res (if (is-eq err-res ERR-PROOF-TOO-SHORT)
+      ok-res
+      (err u1)
+      ;; native verify-merkle-proof no longer surfaces ERR_PROOF_TOO_SHORT; the
+      ;; empty/short witness proof now fails the witness commitment check instead
+      err-res
+      (if (is-eq (err err-res) ERR_WITNESS_TX_NOT_IN_COMMITMENT)
         (ok true)
         (err err-res)
       )
@@ -269,7 +273,7 @@
       (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
     )
     (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
-        burnchain-block-height raw-tx raw-block-header u1 u7
+        burnchain-block-height raw-tx raw-block-header u1 u91
         (list
           0x0000000000000000000000000000000000000000000000000000000000000000
           0x0000000000000000000000000000000000000000000000000000000000000000
@@ -279,7 +283,7 @@
           0x0000000000000000000000000000000000000000000000000000000000000000
           0x0000000000000000000000000000000000000000000000000000000000000000
         )
-        witness-merkle-root witness-reserved-data raw-coinbase-tx
+        witness-merkle-root witness-reserved-data raw-coinbase-tx u1
         (list
           0xfc63a531dfb491d91ddf08dfe0d5b2406a97be193ae90fa44e2fca0b8a30d02f
           0x33274cc92f8b980272688e01114cc2944fb661d1aa3a658c7d29675a46a4d5ad
@@ -289,7 +293,7 @@
           0xd3292e0e550420e500f29663dfc8ef632dbcb119c8a1ddf49aa3d32ecad83084
           0x6369b65eea600edbd69b56386be9269f9662ca3f384a0ca21922ac03d2936102
         ))))
-      (asserts! (is-eq result (err ERR-WITNESS-TX-NOT-IN-COMMITMENT))
+      (asserts! (is-eq result ERR_WITNESS_TX_NOT_IN_COMMITMENT)
         (err result)
       )
       (ok true)
@@ -306,7 +310,7 @@
     )
     (match (contract-call? .clarity-bitcoin parse-wtx raw-tx false)
       ok-res (err u1)
-      err-res (if (is-eq err-res ERR-VARSLICE-TOO-LONG)
+      err-res (if (is-eq (err err-res) ERR_VARSLICE_TOO_LONG)
         (ok true)
         (err err-res)
       )
@@ -331,12 +335,12 @@
       (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
     )
     (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
-        burnchain-block-height raw-tx raw-block-header u3 u2
+        burnchain-block-height raw-tx raw-block-header u3 u4
         (list
           0xb2d7ec769ce60ebc0c8fb9cc37f0ad7481690fc176b82c8d17d3c05da80fea6b
           0x122f3217765b6e8f3163f6725d4aa3d303e4ffe4b99a5e85fb4ff91a026c17a8
         )
-        witness-merkle-root witness-reserved-data raw-coinbase-tx
+        witness-merkle-root witness-reserved-data raw-coinbase-tx u1
         (list
           0x5f4a8858a112953111d5f94605c4dd8d04690eeeb9ffe2f435475d95943f2f3f
           0x3348bf81aae79941662a902206b3ed2d285713668ab134c9e113548daea596fc
@@ -369,7 +373,7 @@
       (parsed-tx (contract-call? .clarity-bitcoin parse-wtx raw-tx false))
     )
     (let ((result (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact
-        burnchain-block-height raw-tx raw-block-header u3456 u13
+        burnchain-block-height raw-tx raw-block-header u3456 u4184
         (list
           0x611ab69bf8d6ad3f91ac374e8b5f33c7ffbb0da714a0650649955d961fdc0604
           0x1476db2e1773b3b8f2d8eb506d024d0cefb1a7ff174a24afa6f74f6da7bedbde
@@ -385,7 +389,7 @@
           0xf7152964931a80341eaefbfc9fe39c42c94bc23d8b5b6e447c4896b664570f68
           0x102364c7305152af68c7dec80752487b1746fbb4d7dc37b512476f9d4ffb2b54
         )
-        witness-merkle-root witness-reserved-data raw-coinbase-tx
+        witness-merkle-root witness-reserved-data raw-coinbase-tx u43
         (list
           0x6f9dd42f32a45fb2208862699a8a3a55f22400e890f51d6759974918793d01ed
           0xe4f2928f30571a9a8e4f61715564c404416d61f12e7c2e5bcd0bde0eeb332b07
@@ -421,8 +425,8 @@
       ;; block id: 000000000000000606f86a5bc8fb6e38b16050fb4676dea26cba5222583c4d86
     )
     (let ((result (contract-call? .clarity-bitcoin parse-wtx raw-tx false)))
-      (asserts! (is-eq result (err ERR-LEFTOVER-DATA))
-        (err "expected ERR-LEFTOVER-DATA")
+      (asserts! (is-eq result ERR_LEFTOVER_DATA)
+        (err "expected ERR_LEFTOVER_DATA")
       )
       (ok true)
     )
@@ -464,7 +468,7 @@
     )
     (ok (asserts!
       (and
-        (is-eq parsed-tx-with-segwit-function (err ERR-NOT-SEGWIT-TRANSACTION))
+        (is-eq parsed-tx-with-segwit-function ERR_NOT_SEGWIT_TRANSACTION)
         (is-eq parsed-tx-with-non-segwit-function (ok correct-parsed-tx))
       )
       (err u1)
@@ -472,16 +476,16 @@
   )
 )
 
-(define-constant ERR-OUT-OF-BOUNDS u1)
-(define-constant ERR-TOO-MANY-TXINS u2)
-(define-constant ERR-TOO-MANY-TXOUTS u3)
-(define-constant ERR-VARSLICE-TOO-LONG u4)
-(define-constant ERR-BAD-HEADER u5)
-(define-constant ERR-HEADER-HEIGHT-MISMATCH u6)
-(define-constant ERR-INVALID-MERKLE-PROOF u7)
-(define-constant ERR-PROOF-TOO-SHORT u8)
-(define-constant ERR-TOO-MANY-WITNESSES u9)
-(define-constant ERR-INVALID-COMMITMENT u10)
-(define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
-(define-constant ERR-NOT-SEGWIT-TRANSACTION u12)
-(define-constant ERR-LEFTOVER-DATA u13)
+(define-constant ERR_OUT_OF_BOUNDS (err u1))
+(define-constant ERR_TOO_MANY_TXINS (err u2))
+(define-constant ERR_TOO_MANY_TXOUTS (err u3))
+(define-constant ERR_VARSLICE_TOO_LONG (err u4))
+(define-constant ERR_BAD_HEADER (err u5))
+(define-constant ERR_HEADER_HEIGHT_MISMATCH (err u6))
+(define-constant ERR_INVALID_MERKLE_PROOF (err u7))
+(define-constant ERR_PROOF_TOO_SHORT (err u8))
+(define-constant ERR_TOO_MANY_WITNESSES (err u9))
+(define-constant ERR_INVALID_COMMITMENT (err u10))
+(define-constant ERR_WITNESS_TX_NOT_IN_COMMITMENT (err u11))
+(define-constant ERR_NOT_SEGWIT_TRANSACTION (err u12))
+(define-constant ERR_LEFTOVER_DATA (err u13))

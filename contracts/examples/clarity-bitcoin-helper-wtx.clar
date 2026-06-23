@@ -45,15 +45,8 @@
     (witness-data (buff 894450))
   )
   (unwrap-panic (as-max-len?
-    (concat
-      (concat
-        (concat
-          (concat (concat (get version tx) 0x0001) (concat-ins (get ins tx)))
-          (concat-outs (get outs tx))
-        )
-        witness-data
-      )
-      (get locktime tx)
+    (concat (get version tx) 0x0001 (concat-ins (get ins tx))
+      (concat-outs (get outs tx)) witness-data (get locktime tx)
     )
     u4096
   ))
@@ -72,14 +65,8 @@
     (result (buff 4096))
   )
   (unwrap-panic (as-max-len?
-    (concat
-      (concat
-        (concat (concat result (get hash (get outpoint in)))
-          (get index (get outpoint in))
-        )
-        (concat-var (get scriptSig in))
-      )
-      (get sequence in)
+    (concat result (get hash (get outpoint in)) (get index (get outpoint in))
+      (concat-var (get scriptSig in)) (get sequence in)
     )
     u4096
   ))
@@ -111,7 +98,7 @@
     (result (buff 4096))
   )
   (unwrap-panic (as-max-len?
-    (concat (concat result (get value out)) (concat-var (get scriptPubKey out)))
+    (concat result (get value out) (concat-var (get scriptPubKey out)))
     u4096
   ))
 )
@@ -137,17 +124,8 @@
   nbits: (buff 4),
   nonce: (buff 4),
 }))
-  (concat
-    (concat
-      (concat
-        (concat (concat (get version block) (get parent block))
-          (get merkle-root block)
-        )
-        (get timestamp block)
-      )
-      (get nbits block)
-    )
-    (get nonce block)
+  (concat (get version block) (get parent block) (get merkle-root block)
+    (get timestamp block) (get nbits block) (get nonce block)
   )
 )
 

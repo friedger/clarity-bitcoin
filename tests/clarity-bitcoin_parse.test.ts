@@ -2,7 +2,7 @@ import { ResponseCV } from '@stacks/transactions';
 import { describe, it } from 'vitest';
 import { parseBlockHeader, parseTx } from './clients/clarity-bitcoin-client.ts';
 import { expectHeaderObject, expectTxObject } from './utils.ts';
-import { hexToBytes } from '@noble/hashes/utils';
+import { hexToBytes } from '@noble/hashes/utils.js';
 
 const accounts = simnet.getAccounts();
 

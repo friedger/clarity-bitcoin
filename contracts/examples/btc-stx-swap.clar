@@ -1,4 +1,4 @@
-(define-constant ERR-OUT-OF-BOUNDS u1)
+(define-constant ERR_OUT_OF_BOUNDS (err u100))
 (define-constant ERR_VERIFICATION_FAILED (err u1))
 (define-constant ERR_FAILED_TO_PARSE_TX (err u2))
 (define-constant ERR_INVALID_ID (err u3))
@@ -10,7 +10,7 @@
 (define-constant ERR_BTC_TX_ALREADY_USED (err u9))
 (define-constant ERR_NATIVE_FAILURE (err u99))
 
-(define-constant expiry u100)
+(define-constant EXPIRY u100)
 (define-map swaps
   uint
   {
@@ -49,7 +49,7 @@
     )
     (ok {
       uint64: (buff-to-uint-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8
+        (unwrap! (slice? data base (+ base u8)) ERR_OUT_OF_BOUNDS) u8
       ))),
       ctx: {
         txbuff: data,
@@ -161,14 +161,14 @@
   )
 )
 
-;; any user can cancle the swap after the expiry period
+;; any user can cancle the swap after the EXPIRY period
 ;; sbtc-sender can cancle it before if the stx-receiver was not yet set
 (define-public (cancel (id uint))
   (let ((swap (unwrap! (map-get? swaps id) ERR_INVALID_ID)))
     (asserts!
       (or
         (and (is-none (get stx-receiver swap)) (is-eq tx-sender (get sbtc-sender swap)))
-        (< (+ (get when swap) expiry) burn-block-height)
+        (< (+ (get when swap) EXPIRY) burn-block-height)
       )
       ERR_FORBIDDEN
     )
@@ -204,7 +204,7 @@
     (proof {
       tx-index: uint,
       hashes: (list 12 (buff 32)),
-      tree-depth: uint,
+      tx-count: uint,
     })
   )
   (let (
@@ -213,7 +213,7 @@
       (stx-receiver (unwrap! (get stx-receiver swap) ERR_NO_STX_RECEIVER))
     )
     (asserts! (is-eq tx-sender stx-receiver) ERR_FORBIDDEN)
-    (match (contract-call? .clarity-bitcoin-lib-v5 was-tx-mined-compact height tx-buff
+    (match (contract-call? .clarity-bitcoin was-tx-mined-compact height tx-buff
       blockheader proof
     )
       result (begin
@@ -266,20 +266,21 @@
     (witness-data (buff 1650))
     (header (buff 80))
     (tx-index uint)
-    (tree-depth uint)
+    (tx-count uint)
     (wproof (list 14 (buff 32)))
     (witness-merkle-root (buff 32))
     (witness-reserved-value (buff 32))
     (ctx (buff 1024))
+    (cb-commitment-vout uint)
     (cproof (list 14 (buff 32)))
   )
   (let (
       (swap (unwrap! (map-get? swaps id) ERR_INVALID_ID))
       (tx-buff (contract-call? .clarity-bitcoin-helper-wtx concat-wtx wtx witness-data))
     )
-    (match (contract-call? .clarity-bitcoin-lib-v5 was-segwit-tx-mined-compact height
-      tx-buff header tx-index tree-depth wproof witness-merkle-root
-      witness-reserved-value ctx cproof
+    (match (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact height
+      tx-buff header tx-index tx-count wproof witness-merkle-root
+      witness-reserved-value ctx cb-commitment-vout cproof
     )
       result (begin
         (asserts! (is-none (map-get? submitted-btc-txs result))
