@@ -26,7 +26,7 @@ describe('Bitcoin library with remote data', () => {
   it('Ensure that remote data is as expected', () => {
     const bbh = simnet.execute('burn-block-height');
     // deploying the Clarity 6 (epoch 4.0) contracts advances the fork tip past the proof block
-    expect(bbh.result).toBeUint(bitcoinHeight + 2);
+    expect(bbh.result).toBeUint(bitcoinHeight + 1);
 
     var bbhh = simnet.execute(`(get-burn-block-info? header-hash u${bitcoinHeight})`);
     expect(bbhh.result).toBeSome(Cl.bufferFromHex(bitcoinBlockHeaderHash));

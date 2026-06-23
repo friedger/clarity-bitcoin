@@ -65,27 +65,14 @@ plan:
   - id: 0
     transactions:
     - transaction-type: emulated-contract-publish
-      contract-name: stx-oracle
+      contract-name: clarity-bitcoin-helper
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-      path: contracts/stx-oracle.clar
-      clarity-version: 2
-    - transaction-type: emulated-contract-publish
-      contract-name: stx-account
-      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-      path: contracts/helper-stx-account.clar
-      clarity-version: 2
-    epoch: '2.1'
-  - id: 1
-    transactions:
+      path: contracts/clarity-bitcoin-helper.clar
+      clarity-version: 6
     - transaction-type: emulated-contract-publish
       contract-name: clarity-bitcoin
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
       path: contracts/clarity-bitcoin.clar
-      clarity-version: 6
-    - transaction-type: emulated-contract-publish
-      contract-name: clarity-bitcoin-helper
-      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-      path: contracts/clarity-bitcoin-helper.clar
       clarity-version: 6
     - transaction-type: emulated-contract-publish
       contract-name: clarity-bitcoin-helper-wtx

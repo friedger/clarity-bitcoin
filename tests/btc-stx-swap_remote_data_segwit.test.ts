@@ -39,7 +39,7 @@ describe('User can finalize btc-stx swap', () => {
   test('Ensure that remote data is as expected', () => {
     const bbh = simnet.execute('burn-block-height');
     // deploying the Clarity 6 (epoch 4.0) contracts advances the fork tip past the proof block
-    expect(bbh.result).toBeUint(blockHeight + 2);
+    expect(bbh.result).toBeUint(blockHeight + 1);
 
     var bbhh = simnet.execute(`(get-burn-block-info? header-hash u${blockHeight})`);
     expect(bbhh.result).toBeSome(bufferCV(hexToBytes(bitcoinBlockHeaderHash)));

@@ -53,11 +53,3 @@
 }))
   (ok (contract-call? .clarity-bitcoin-helper concat-header header))
 )
-
-(define-public (get-rewards (height uint))
-  (ok (contract-call? .stx-oracle get-rewards height))
-)
-
-(define-public (get-sats-stx-price (height uint))
-  (ok (contract-call? .stx-oracle get-sats-stx-price height))
-)

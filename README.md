@@ -6,6 +6,7 @@ Based on work from [Jude Nelson](https://github.com/jcnelson/clarity-bitcoin) an
 
 Deployments on mainnet:
 
+- Version 8 (not yet deployed): Upgrades to the Clarity 6 preview. The in-library Merkle verification is replaced by the native `verify-merkle-proof` builtin, and the coinbase witness commitment is read with the native `get-bitcoin-tx-output?` builtin, which lowers verification cost. Because the native Merkle check applies Bitcoin's "duplicate the last node on odd rows" rule, the proof now carries the block's transaction count (`tx-count`) instead of the Merkle tree depth, and `was-segwit-tx-mined-compact` takes the index of the coinbase output that holds the witness commitment.
 - [Version 7](https://explorer.hiro.so/txid/0xe433b35e95acfd24595e601860b4240cfaacd689ae7e7938a80c5505f186516b?chain=mainnet): Adds support transaction verification in blocks with bigger coinbase txs and for txs with more inputs and outputs
 - Version 6: Debug version of version 7
 - [Version 5](https://explorer.hiro.so/txid/0xfe25941d97a1b965b09699b622ec1d701997be62708dbac2e7a8c36a49e3e9bc?chain=mainnet): Adds support for txid generation and improves security to reject left over data
@@ -54,12 +55,13 @@ The function for segwit transaction takes the following arguments:
 2. Raw tx hex
 3. Bitcoin block header either as hex
 4. The index of the tx in the block
-5. The Merkle tree depth of the block
+5. The number of transactions in the block (tx-count)
 6. The Merkle proof for witness data
 7. The Merkle root for witness data stored in the coinbase tx of the block
 8. The reserved data value used in the coinbase tx
 9. The coinbase tx in non-segwit format
-10. The Merkle proof of the coinbase tx
+10. The index of the coinbase output that holds the witness commitment
+11. The Merkle proof of the coinbase tx
 
 ### Verification Functions for Non-Segwit Transactions in Bitcoin Block
 
@@ -69,7 +71,8 @@ The verification happens in two steps:
 2. verify that the given merkle proof for the given transaction id results in the merkle root contained in the header.
 
 - verify-block-header
-- verify-merkle-proof
+
+The Merkle proof itself is checked with the Clarity 6 native `verify-merkle-proof` builtin; it is no longer a function of this contract.
 
 ### Verification Functions for Segwit Transactions in Bitcoin Block
 
@@ -79,7 +82,9 @@ The verification happens in two steps:
 2. verify that the Merkle root for witness data is contained in the coinbase tx.
 3. verify that the Merkle proof for witness data is valid for the wtxid of the transaction.
 
-- get-commitment-scriptPubKey
+The coinbase output that carries the commitment is read with the Clarity 6 native `get-bitcoin-tx-output?` builtin, and its BIP-141 structure is checked with:
+
+- is-commitment-pattern
 
 ### Helper Function for Tx Verification
 
