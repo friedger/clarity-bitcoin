@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "test:local": "vitest run --exclude \"**/*remote_data*\" --exclude \"**/send-to-first-input-compact.test.ts\"",
+    "test:remote": "vitest run remote_data send-to-first-input",
     "test:report": "vitest run -- --coverage --costs",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
     "test:rv": "rv . clarity-bitcoin test"
