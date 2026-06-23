@@ -1,16 +1,7 @@
 ;; @contract stateless contract to verify bitcoin transaction
-;; @version 6
-
-;; version 6 increases the transactions limits
-;; - max tx size is 4096 bytes (including coinbase tx)
-;; - max 50 inputs
-;; - max 50 outputs
-;; - max size of scriptSig is 1376 bytes
-;; - max size of scriptPubKey is 1376 bytes
-;; - max 13 witness items per input
-;; - max size of witness item is 1376 bytes
+;; @version 8
 ;;
-;; version 6 also uses the Clarity 6 native builtins for the cost-heavy paths:
+;; Uses the Clarity 6 native builtins for the cost-heavy paths:
 ;; - `verify-merkle-proof` replaces the hand-rolled merkle verification. The native
 ;;   builtin needs the block's real transaction count to apply Bitcoin's "duplicate the
 ;;   last node on odd rows" rule, so the proof format carries `tx-count` (the number of
@@ -908,6 +899,7 @@
   )
 )
 
+;; #[env(simnet)]
 ;; ---------------------------------------------------------------------------
 ;; Property-based tests for Rendezvous: `rv . clarity-bitcoin test`
 ;;
@@ -919,7 +911,7 @@
 ;; 32-byte values are derived with sha256 so the fuzzer never has to hit an exact
 ;; buffer length, which keeps the discard rate at zero.
 ;; ---------------------------------------------------------------------------
-
+;;
 ;; reverse-buff32 is its own inverse: reversing twice returns the input.
 ;; #[env(simnet)]
 (define-private (test-reverse-buff32-involution (preimage (buff 1024)))
