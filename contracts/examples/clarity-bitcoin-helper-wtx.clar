@@ -98,8 +98,7 @@
     (result (buff 4096))
   )
   (unwrap-panic (as-max-len?
-    (concat result (get value out) (concat-var (get scriptPubKey out)))
-    u4096
+    (concat result (get value out) (concat-var (get scriptPubKey out))) u4096
   ))
 )
 

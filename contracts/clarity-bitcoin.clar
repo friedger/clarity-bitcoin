@@ -68,9 +68,7 @@
       (base (get index ctx))
     )
     (ok {
-      uint8: (buff-to-uint-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? data base (+ base u1)) ERR_OUT_OF_BOUNDS) u1
-      ))),
+      uint8: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u1)) ERR_OUT_OF_BOUNDS) u1))),
       ctx: {
         txbuff: data,
         index: (+ u1 base),
@@ -91,9 +89,7 @@
       (base (get index ctx))
     )
     (ok {
-      uint16: (buff-to-uint-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? data base (+ base u2)) ERR_OUT_OF_BOUNDS) u2
-      ))),
+      uint16: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u2)) ERR_OUT_OF_BOUNDS) u2))),
       ctx: {
         txbuff: data,
         index: (+ u2 base),
@@ -114,9 +110,7 @@
       (base (get index ctx))
     )
     (ok {
-      uint32: (buff-to-uint-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? data base (+ base u4)) ERR_OUT_OF_BOUNDS) u4
-      ))),
+      uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) ERR_OUT_OF_BOUNDS) u4))),
       ctx: {
         txbuff: data,
         index: (+ u4 base),
@@ -137,9 +131,7 @@
       (base (get index ctx))
     )
     (ok {
-      uint64: (buff-to-uint-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? data base (+ base u8)) ERR_OUT_OF_BOUNDS) u8
-      ))),
+      uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) ERR_OUT_OF_BOUNDS) u8))),
       ctx: {
         txbuff: data,
         index: (+ u8 base),
@@ -596,8 +588,7 @@
       ins: (get txins parsed-txins),
       outs: (get txouts parsed-txouts),
       txid: (if calculate-txid
-        (some (reverse-buff32 (sha256 (sha256 (concat
-          (unwrap-panic (slice? tx u0 u4))
+        (some (reverse-buff32 (sha256 (sha256 (concat (unwrap-panic (slice? tx u0 u4))
           (unwrap-panic (slice? tx (get index (get ctx parsed-segwit-version))
             (get index (get ctx parsed-txouts))
           ))
@@ -900,7 +891,9 @@
       ;; root hash. BIP-141 permits extra data after the commitment, so only the
       ;; first 38 bytes (header + hash) are checked, not the full scriptPubKey.
       (asserts!
-        (is-eq (unwrap! (slice? witness-out u6 u38) ERR_INVALID_COMMITMENT) final-hash)
+        (is-eq (unwrap! (slice? witness-out u6 u38) ERR_INVALID_COMMITMENT)
+          final-hash
+        )
         ERR_INVALID_COMMITMENT
       )
       ;; verify witness merkle tree (native verify-merkle-proof returns a bool)
@@ -933,15 +926,22 @@
   (let ((b (sha256 preimage)))
     (begin
       (asserts! (is-eq (reverse-buff32 (reverse-buff32 b)) b) (err u1))
-      (ok true))))
+      (ok true)
+    )
+  )
+)
 
 ;; The two txid helpers are consistent: get-txid is the byte-reverse of
 ;; get-reversed-txid for any transaction buffer.
 ;; #[env(simnet)]
 (define-private (test-txid-double-reverse (tx (buff 4096)))
   (begin
-    (asserts! (is-eq (get-txid tx) (reverse-buff32 (get-reversed-txid tx))) (err u2))
-    (ok true)))
+    (asserts! (is-eq (get-txid tx) (reverse-buff32 (get-reversed-txid tx)))
+      (err u2)
+    )
+    (ok true)
+  )
+)
 
 ;; In a single-transaction block the txid IS the merkle root, so an empty proof
 ;; verifies inclusion.
@@ -950,7 +950,10 @@
   (let ((txid (sha256 preimage)))
     (begin
       (asserts! (verify-merkle-proof txid txid u0 u1 (list)) (err u3))
-      (ok true))))
+      (ok true)
+    )
+  )
+)
 
 ;; Soundness: an empty proof must NOT verify a transaction against a different
 ;; merkle root (a single-tx block where txid != root).
@@ -967,7 +970,11 @@
       (ok false) ;; discard the (cryptographically impossible) hash collision
       (begin
         (asserts! (not (verify-merkle-proof txid root u0 u1 (list))) (err u4))
-        (ok true)))))
+        (ok true)
+      )
+    )
+  )
+)
 
 ;; CVE-2012-2459 resistance: a 2-leaf tree whose two leaves are identical (which
 ;; lets an attacker forge a tree by duplicating nodes) must NOT verify.
@@ -979,7 +986,10 @@
     )
     (begin
       (asserts! (not (verify-merkle-proof leaf root u0 u2 (list leaf))) (err u30))
-      (ok true))))
+      (ok true)
+    )
+  )
+)
 
 ;; A two-transaction block: both leaves verify against the manually computed
 ;; double-sha256 root, with the sibling supplied in the proof.
@@ -1002,7 +1012,11 @@
         (asserts! (verify-merkle-proof leaf0 root u0 u2 (list leaf1)) (err u5))
         ;; tx at index 1, its sibling is leaf0
         (asserts! (verify-merkle-proof leaf1 root u1 u2 (list leaf0)) (err u6))
-        (ok true)))))
+        (ok true)
+      )
+    )
+  )
+)
 
 ;; Parsing soundness: parse-block-header extracts the merkle-root field as the
 ;; byte-reverse of header bytes 36..68. The header is built from fuzzed pieces so
@@ -1019,14 +1033,22 @@
       (header (concat
         (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-version) u0 u4)) u4))
         (concat (sha256 p-parent)
-        (concat mroot
-        (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-rest) u0 u12)) u12))))))
+          (concat mroot
+            (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-rest) u0 u12)) u12))
+          ))
+      ))
     )
     (match (parse-block-header header)
       parsed (begin
-        (asserts! (is-eq (get merkle-root parsed) (reverse-buff32 mroot)) (err u7))
-        (ok true))
-      err (ok false))))
+        (asserts! (is-eq (get merkle-root parsed) (reverse-buff32 mroot))
+          (err u7)
+        )
+        (ok true)
+      )
+      err (ok false)
+    )
+  )
+)
 
 ;; A four-transaction block (tree depth 2): leaves verify against the manually
 ;; computed root with the two sibling hashes supplied in the proof.
@@ -1046,7 +1068,11 @@
       (h23 (sha256 (sha256 (concat l2 l3))))
       (root (sha256 (sha256 (concat h01 h23))))
     )
-    (if (or (is-eq l0 l1) (is-eq l2 l3) (is-eq h01 h23))
+    (if (or
+        (is-eq l0 l1)
+        (is-eq l2 l3)
+        (is-eq h01 h23)
+      )
       ;; any pair of identical sibling hashes is rejected as a CVE-2012-2459 mutation
       (ok false)
       (begin
@@ -1054,7 +1080,11 @@
         (asserts! (verify-merkle-proof l0 root u0 u4 (list l1 h23)) (err u8))
         ;; leaf 2: level-0 sibling l3, level-1 sibling h01
         (asserts! (verify-merkle-proof l2 root u2 u4 (list l3 h01)) (err u9))
-        (ok true)))))
+        (ok true)
+      )
+    )
+  )
+)
 
 ;; read-uint32 advances the cursor by exactly four bytes when reading in bounds.
 ;; #[env(simnet)]
@@ -1066,41 +1096,62 @@
     })
       r (begin
         (asserts! (is-eq (get index (get ctx r)) u4) (err u10))
-        (asserts! (is-eq (get uint32 r)
-          (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap-panic (slice? data u0 u4)) u4))))
-          (err u11))
-        (ok true))
-      e (ok false)) ;; discard reads that run past the end
-    (ok false)))
+        (asserts!
+          (is-eq (get uint32 r)
+            (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap-panic (slice? data u0 u4)) u4)))
+          )
+          (err u11)
+        )
+        (ok true)
+      )
+      e (ok false)
+    )
+    ;; discard reads that run past the end
+    (ok false)
+  )
+)
 
 ;; A varint whose first byte is <= 252 encodes that byte and advances by one.
 ;; #[env(simnet)]
 (define-private (test-read-varint-single-byte (data (buff 4096)))
-  (if (and (>= (len data) u1)
-        (<= (buff-to-uint-le (unwrap-panic (element-at data u0))) u252))
+  (if (and
+      (>= (len data) u1)
+      (<= (buff-to-uint-le (unwrap-panic (element-at data u0))) u252)
+    )
     (match (read-varint {
       txbuff: data,
       index: u0,
     })
       r (begin
-        (asserts! (is-eq (get varint r) (buff-to-uint-le (unwrap-panic (element-at data u0))))
-          (err u12))
+        (asserts!
+          (is-eq (get varint r)
+            (buff-to-uint-le (unwrap-panic (element-at data u0)))
+          )
+          (err u12)
+        )
         (asserts! (is-eq (get index (get ctx r)) u1) (err u13))
-        (ok true))
-      e (ok false))
-    (ok false)))
+        (ok true)
+      )
+      e (ok false)
+    )
+    (ok false)
+  )
+)
 
 ;; is-commitment-pattern matches exactly the BIP-141 6-byte commitment header.
 ;; #[env(simnet)]
 (define-private (test-is-commitment-pattern (p (buff 1024)))
   (let (
       (yes (concat 0x6a24aa21a9ed (sha256 p))) ;; valid header + 32 bytes
-      (no (concat 0x00 (sha256 p)))            ;; wrong first byte
+      (no (concat 0x00 (sha256 p))) ;; wrong first byte
     )
     (begin
       (asserts! (is-commitment-pattern yes) (err u14))
       (asserts! (not (is-commitment-pattern no)) (err u15))
-      (ok true))))
+      (ok true)
+    )
+  )
+)
 
 ;; Round-trip: a transaction serialized by clarity-bitcoin-helper's concat-tx
 ;; parses back to the same parts with parse-tx. Numeric fields come back as
@@ -1129,18 +1180,22 @@
       (locktime (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-locktime) u0 u4)) u4)))
       (raw (contract-call? .clarity-bitcoin-helper concat-tx {
         version: version,
-        ins: (list {
-          outpoint: {
-            hash: hash,
-            index: index,
-          },
-          scriptSig: (unwrap-panic (as-max-len? script-sig u1376)),
-          sequence: sequence,
-        }),
-        outs: (list {
-          value: value,
-          scriptPubKey: (unwrap-panic (as-max-len? script-pubkey u1376)),
-        }),
+        ins: (list
+          {
+            outpoint: {
+              hash: hash,
+              index: index,
+            },
+            scriptSig: (unwrap-panic (as-max-len? script-sig u1376)),
+            sequence: sequence,
+          }
+        ),
+        outs: (list
+          {
+            value: value,
+            scriptPubKey: (unwrap-panic (as-max-len? script-pubkey u1376)),
+          }
+        ),
         locktime: locktime,
       }))
     )
@@ -1149,16 +1204,28 @@
           (pin (unwrap-panic (element-at (get ins parsed) u0)))
           (pout (unwrap-panic (element-at (get outs parsed) u0)))
         )
-        (asserts! (is-eq (get version parsed) (buff-to-uint-le version)) (err u20))
-        (asserts! (is-eq (get locktime parsed) (buff-to-uint-le locktime)) (err u21))
+        (asserts! (is-eq (get version parsed) (buff-to-uint-le version))
+          (err u20)
+        )
+        (asserts! (is-eq (get locktime parsed) (buff-to-uint-le locktime))
+          (err u21)
+        )
         (asserts! (is-eq (len (get ins parsed)) u1) (err u22))
         (asserts! (is-eq (len (get outs parsed)) u1) (err u23))
         ;; parse-tx returns the outpoint hash byte-reversed
-        (asserts! (is-eq (get hash (get outpoint pin)) (reverse-buff32 hash)) (err u24))
-        (asserts! (is-eq (get index (get outpoint pin)) (buff-to-uint-le index)) (err u25))
+        (asserts! (is-eq (get hash (get outpoint pin)) (reverse-buff32 hash))
+          (err u24)
+        )
+        (asserts! (is-eq (get index (get outpoint pin)) (buff-to-uint-le index))
+          (err u25)
+        )
         (asserts! (is-eq (get scriptSig pin) script-sig) (err u26))
         (asserts! (is-eq (get sequence pin) (buff-to-uint-le sequence)) (err u27))
         (asserts! (is-eq (get value pout) (buff-to-uint-le value)) (err u28))
         (asserts! (is-eq (get scriptPubKey pout) script-pubkey) (err u29))
-        (ok true))
-      err (ok false))))
+        (ok true)
+      )
+      err (ok false)
+    )
+  )
+)

@@ -293,9 +293,7 @@
           0xd3292e0e550420e500f29663dfc8ef632dbcb119c8a1ddf49aa3d32ecad83084
           0x6369b65eea600edbd69b56386be9269f9662ca3f384a0ca21922ac03d2936102
         ))))
-      (asserts! (is-eq result ERR_WITNESS_TX_NOT_IN_COMMITMENT)
-        (err result)
-      )
+      (asserts! (is-eq result ERR_WITNESS_TX_NOT_IN_COMMITMENT) (err result))
       (ok true)
     )
   )

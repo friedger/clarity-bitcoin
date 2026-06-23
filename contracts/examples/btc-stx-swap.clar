@@ -48,9 +48,7 @@
       (base (get index ctx))
     )
     (ok {
-      uint64: (buff-to-uint-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? data base (+ base u8)) ERR_OUT_OF_BOUNDS) u8
-      ))),
+      uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) ERR_OUT_OF_BOUNDS) u8))),
       ctx: {
         txbuff: data,
         index: (+ u8 base),
@@ -278,8 +276,8 @@
       (swap (unwrap! (map-get? swaps id) ERR_INVALID_ID))
       (tx-buff (contract-call? .clarity-bitcoin-helper-wtx concat-wtx wtx witness-data))
     )
-    (match (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact height
-      tx-buff header tx-index tx-count wproof witness-merkle-root
+    (match (contract-call? .clarity-bitcoin was-segwit-tx-mined-compact height tx-buff
+      header tx-index tx-count wproof witness-merkle-root
       witness-reserved-value ctx cb-commitment-vout cproof
     )
       result (begin
