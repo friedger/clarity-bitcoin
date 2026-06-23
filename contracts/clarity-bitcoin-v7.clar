@@ -1,34 +1,29 @@
 ;; @contract stateless contract to verify bitcoin transaction
-;; @version 8
-;;
-;; Uses the Clarity 6 native builtins for the cost-heavy paths:
-;; - `verify-merkle-proof` replaces the hand-rolled merkle verification. The native
-;;   builtin needs the block's real transaction count to apply Bitcoin's "duplicate the
-;;   last node on odd rows" rule, so the proof format carries `tx-count` (the number of
-;;   transactions in the block) instead of `tree-depth`. A depth-derived value such as
-;;   `2^tree-depth` is NOT correct: many tx-counts share a tree depth but produce
-;;   different odd-row boundaries, so it fails for transactions past an odd boundary in
-;;   any non-power-of-two block. The merkle tree depth is still recoverable as
-;;   `(len hashes)` = `ceil(log2(tx-count))`.
-;; - `get-bitcoin-tx-output?` replaces parsing the whole coinbase to find the BIP-141
-;;   witness commitment; the caller passes the commitment output index instead.
-;; As a result the user-defined `verify-merkle-proof` / `inner-merkle-proof-verify` and
-;; the `*-commitment-scriptPubKey` helpers are removed from the contract API.
+;; @version 6
+
+;; version 6 increases the transactions limits
+;; - max tx size is 4096 bytes (including coinbase tx)
+;; - max 50 inputs
+;; - max 50 outputs
+;; - max size of scriptSig is 1376 bytes
+;; - max size of scriptPubKey is 1376 bytes
+;; - max 13 witness items per input
+;; - max size of witness item is 1376 bytes
 
 ;; Error codes
-(define-constant ERR_OUT_OF_BOUNDS (err u1))
-(define-constant ERR_TOO_MANY_TXINS (err u2))
-(define-constant ERR_TOO_MANY_TXOUTS (err u3))
-(define-constant ERR_VARSLICE_TOO_LONG (err u4))
-(define-constant ERR_BAD_HEADER (err u5))
-(define-constant ERR_HEADER_HEIGHT_MISMATCH (err u6))
-(define-constant ERR_INVALID_MERKLE_PROOF (err u7))
-;; u8 (was ERR-PROOF-TOO-SHORT) is now owned by the native verify-merkle-proof error path
-(define-constant ERR_TOO_MANY_WITNESSES (err u9))
-(define-constant ERR_INVALID_COMMITMENT (err u10))
-(define-constant ERR_WITNESS_TX_NOT_IN_COMMITMENT (err u11))
-(define-constant ERR_NOT_SEGWIT_TRANSACTION (err u12))
-(define-constant ERR_LEFTOVER_DATA (err u13))
+(define-constant ERR-OUT-OF-BOUNDS u1)
+(define-constant ERR-TOO-MANY-TXINS u2)
+(define-constant ERR-TOO-MANY-TXOUTS u3)
+(define-constant ERR-VARSLICE-TOO-LONG u4)
+(define-constant ERR-BAD-HEADER u5)
+(define-constant ERR-HEADER-HEIGHT-MISMATCH u6)
+(define-constant ERR-INVALID-MERKLE-PROOF u7)
+(define-constant ERR-PROOF-TOO-SHORT u8)
+(define-constant ERR-TOO-MANY-WITNESSES u9)
+(define-constant ERR-INVALID-COMMITMENT u10)
+(define-constant ERR-WITNESS-TX-NOT-IN-COMMITMENT u11)
+(define-constant ERR-NOT-SEGWIT-TRANSACTION u12)
+(define-constant ERR-LEFTOVER-DATA u13)
 
 ;;
 ;; Helper functions to parse bitcoin transactions
@@ -37,8 +32,7 @@
 ;; Create a list with n elments `true`. n must be not greater than 50.
 (define-private (bool-list-of-len (n uint))
   (unwrap-panic (slice?
-    (list
-      true true true true true true true true true true true true true true
+    (list true true true true true true true true true true true true true true
       true true true true true true true true true true true true true true
       true true true true true true true true true true true true true true
       true true true true true true true true
@@ -49,7 +43,7 @@
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint8 (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -59,7 +53,9 @@
       (base (get index ctx))
     )
     (ok {
-      uint8: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u1)) ERR_OUT_OF_BOUNDS) u1))),
+      uint8: (buff-to-uint-le (unwrap-panic (as-max-len?
+        (unwrap! (slice? data base (+ base u1)) (err ERR-OUT-OF-BOUNDS)) u1
+      ))),
       ctx: {
         txbuff: data,
         index: (+ u1 base),
@@ -70,7 +66,7 @@
 
 ;; Reads the next two bytes from txbuff as a little-endian 16-bit integer, and updates the index.
 ;; Returns (ok { uint16: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint16 (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -80,7 +76,9 @@
       (base (get index ctx))
     )
     (ok {
-      uint16: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u2)) ERR_OUT_OF_BOUNDS) u2))),
+      uint16: (buff-to-uint-le (unwrap-panic (as-max-len?
+        (unwrap! (slice? data base (+ base u2)) (err ERR-OUT-OF-BOUNDS)) u2
+      ))),
       ctx: {
         txbuff: data,
         index: (+ u2 base),
@@ -91,7 +89,7 @@
 
 ;; Reads the next four bytes from txbuff as a little-endian 32-bit integer, and updates the index.
 ;; Returns (ok { uint32: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint32 (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -101,7 +99,9 @@
       (base (get index ctx))
     )
     (ok {
-      uint32: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u4)) ERR_OUT_OF_BOUNDS) u4))),
+      uint32: (buff-to-uint-le (unwrap-panic (as-max-len?
+        (unwrap! (slice? data base (+ base u4)) (err ERR-OUT-OF-BOUNDS)) u4
+      ))),
       ctx: {
         txbuff: data,
         index: (+ u4 base),
@@ -112,7 +112,7 @@
 
 ;; Reads the next eight bytes from txbuff as a little-endian 64-bit integer, and updates the index.
 ;; Returns (ok { uint64: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff
 (define-read-only (read-uint64 (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -122,7 +122,9 @@
       (base (get index ctx))
     )
     (ok {
-      uint64: (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap! (slice? data base (+ base u8)) ERR_OUT_OF_BOUNDS) u8))),
+      uint64: (buff-to-uint-le (unwrap-panic (as-max-len?
+        (unwrap! (slice? data base (+ base u8)) (err ERR-OUT-OF-BOUNDS)) u8
+      ))),
       ctx: {
         txbuff: data,
         index: (+ u8 base),
@@ -133,7 +135,7 @@
 
 ;; Reads the next varint from txbuff, and updates the index.
 ;; Returns (ok { varint: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-varint (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -141,7 +143,7 @@
   (let (
       (ptr (get index ctx))
       (tx (get txbuff ctx))
-      (byte (buff-to-uint-le (unwrap! (element-at tx ptr) ERR_OUT_OF_BOUNDS)))
+      (byte (buff-to-uint-le (unwrap! (element-at tx ptr) (err ERR-OUT-OF-BOUNDS))))
     )
     (if (<= byte u252)
       ;; given byte is the varint
@@ -198,7 +200,7 @@
 
 ;; Reads a varint-prefixed byte slice from txbuff, and updates the index to point to the byte after the varint and slice.
 ;; Returns (ok { varslice: (buff 4096), ctx: { txbuff: (buff 4096), index: uint } }) on success, where varslice has the length of the varint prefix.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-varslice (old-ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -211,7 +213,7 @@
       (txbuff (get txbuff ctx))
     )
     (ok {
-      varslice: (unwrap! (slice? txbuff slice-start target-index) ERR_OUT_OF_BOUNDS),
+      varslice: (unwrap! (slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS)),
       ctx: {
         txbuff: txbuff,
         index: target-index,
@@ -236,7 +238,7 @@
 
 ;; Reads a little-endian hash -- consume the next 32 bytes, and reverse them.
 ;; Returns (ok { hashslice: (buff 32), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
 (define-read-only (read-hashslice (old-ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -246,7 +248,7 @@
       (target-index (+ u32 slice-start))
       (txbuff (get txbuff old-ctx))
       (hash-le (unwrap-panic (as-max-len?
-        (unwrap! (slice? txbuff slice-start target-index) ERR_OUT_OF_BOUNDS)
+        (unwrap! (slice? txbuff slice-start target-index) (err ERR-OUT-OF-BOUNDS))
         u32
       )))
     )
@@ -263,9 +265,9 @@
 ;; Inner fold method to read the next tx input from txbuff.
 ;; The index in ctx will be updated to point to the next tx input if all goes well (or to the start of the outputs)
 ;; Returns (ok { ... }) on success.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptSig that's too long to parse.
-;; Returns ERR_TOO_MANY_TXINS if there are more than eight inputs to read.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
 (define-read-only (read-next-txin
     (ignored bool)
     (result (response {
@@ -274,16 +276,14 @@
         index: uint,
       },
       remaining: uint,
-      txins: (list 50
-        {
-          outpoint: {
-            hash: (buff 32),
-            index: uint,
-          },
-          scriptSig: (buff 1376), ;; just big enough to hold a 3-of-5 multisig script
-          sequence: uint,
-        }
-      ),
+      txins: (list 50 {
+        outpoint: {
+          hash: (buff 32),
+          index: uint,
+        },
+        scriptSig: (buff 1376), ;; just big enough to hold a 3-of-5 multisig script
+        sequence: uint,
+      }),
     }
       uint
     ))
@@ -309,13 +309,13 @@
                 index: (get uint32 parsed-index),
               },
               scriptSig: (unwrap! (as-max-len? (get varslice parsed-scriptSig) u1376)
-                ERR_VARSLICE_TOO_LONG
+                (err ERR-VARSLICE-TOO-LONG)
               ),
               sequence: (get uint32 parsed-sequence),
             })
             u50
           )
-          ERR_TOO_MANY_TXINS
+          (err ERR-TOO-MANY-TXINS)
         ),
       })
     )
@@ -324,9 +324,9 @@
 
 ;; Read a transaction's inputs.
 ;; Returns (ok { txins: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptSig that's too long to parse.
-;; Returns ERR_TOO_MANY_TXINS if there are more than eight inputs to read.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptSig that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight inputs to read.
 (define-read-only (read-txins (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -337,7 +337,7 @@
       (new-ctx (get ctx parsed-num-txins))
     )
     (if (> num-txins u50)
-      ERR_TOO_MANY_TXINS
+      (err ERR-TOO-MANY-TXINS)
       (fold read-next-txin (bool-list-of-len num-txins)
         (ok {
           ctx: new-ctx,
@@ -351,9 +351,9 @@
 
 ;; Read the next transaction output, and update the index in ctx to point to the next output.
 ;; Returns (ok { ... }) on success
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptPubKey that's too long to parse.
-;; Returns ERR_TOO_MANY_TXOUTS if there are more than eight outputs to read.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-next-txout
     (ignored bool)
     (result (response {
@@ -382,12 +382,12 @@
           (append (get txouts state) {
             value: (get uint64 parsed-value),
             scriptPubKey: (unwrap! (as-max-len? (get varslice parsed-script) u1376)
-              ERR_VARSLICE_TOO_LONG
+              (err ERR-VARSLICE-TOO-LONG)
             ),
           })
           u50
         )
-        ERR_TOO_MANY_TXOUTS
+        (err ERR-TOO-MANY-TXOUTS)
       ),
     })
   )
@@ -395,9 +395,9 @@
 
 ;; Read all transaction outputs in a transaction.  Update the index to point to the first byte after the outputs, if all goes well.
 ;; Returns (ok { txouts: (list { ... }), remaining: uint, ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point to the start of the tx outputs.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptPubKey that's too long to parse.
-;; Returns ERR_TOO_MANY_TXOUTS if there are more than eight outputs to read.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight outputs to read.
 (define-read-only (read-txouts (ctx {
   txbuff: (buff 4096),
   index: uint,
@@ -408,7 +408,7 @@
       (new-ctx (get ctx parsed-num-txouts))
     )
     (if (> num-txouts u50)
-      ERR_TOO_MANY_TXOUTS
+      (err ERR-TOO-MANY-TXOUTS)
       (fold read-next-txout (bool-list-of-len num-txouts)
         (ok {
           ctx: new-ctx,
@@ -443,11 +443,11 @@
         (as-max-len?
           (append (get items state)
             (unwrap! (as-max-len? (get varslice parsed-item) u1376)
-              ERR_VARSLICE_TOO_LONG
+              (err ERR-VARSLICE-TOO-LONG)
             ))
           u13
         )
-        ERR_TOO_MANY_WITNESSES
+        (err ERR-TOO-MANY-WITNESSES)
       ),
     })
   )
@@ -498,9 +498,9 @@
 
 ;; Read all witness data in a transaction.  Update the index to point to the end of the tx, if all goes well.
 ;; Returns (ok {witnesses: (list 50 (list 13 (buff 1376))), ctx: { txbuff: (buff 4096), index: uint } }) on success, and updates the index in ctx to point after the end of the tx.
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptPubKey that's too long to parse.
-;; Returns ERR_TOO_MANY_WITNESSES if there are more than eight witness data or stack items to read.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey that's too long to parse.
+;; Returns (err ERR-TOO-MANY-WITNESSES) if there are more than eight witness data or stack items to read.
 (define-read-only (read-witnesses
     (ctx {
       txbuff: (buff 4096),
@@ -542,12 +542,12 @@
 ;;      witnesses: (list 50 (list 13 (buff 1376))),
 ;;      locktime: uint
 ;; })
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptPubKey or scriptSig that's too long to parse.
-;; Returns ERR_TOO_MANY_TXOUTS if there are more than eight inputs to read.
-;; Returns ERR_TOO_MANY_TXINS if there are more than eight outputs to read.
-;; Returns ERR_NOT_SEGWIT_TRANSACTION if tx is not a segwit transaction.
-;; Returns ERR_LEFTOVER_DATA if the tx buffer contains leftover data at the end.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
+;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
+;; Returns (err ERR-NOT-SEGWIT-TRANSACTION) if tx is not a segwit transaction.
+;; Returns (err ERR-LEFTOVER-DATA) if the tx buffer contains leftover data at the end.
 (define-read-only (parse-wtx
     (tx (buff 4096))
     (calculate-txid bool)
@@ -567,10 +567,10 @@
     )
     (asserts!
       (and (is-eq (get uint8 parsed-segwit-marker) u0) (is-eq (get uint8 parsed-segwit-version) u1))
-      ERR_NOT_SEGWIT_TRANSACTION
+      (err ERR-NOT-SEGWIT-TRANSACTION)
     )
     (asserts! (is-eq (len tx) (get index (get ctx parsed-locktime)))
-      ERR_LEFTOVER_DATA
+      (err ERR-LEFTOVER-DATA)
     )
     (ok {
       version: (get uint32 parsed-version),
@@ -580,11 +580,12 @@
       outs: (get txouts parsed-txouts),
       txid: (if calculate-txid
         (some (reverse-buff32 (sha256 (sha256 (concat (unwrap-panic (slice? tx u0 u4))
-          (unwrap-panic (slice? tx (get index (get ctx parsed-segwit-version))
-            (get index (get ctx parsed-txouts))
-          ))
-          (unwrap-panic (slice? tx (get index (get ctx parsed-witnesses)) (len tx)))
-        )))))
+          (concat
+            (unwrap-panic (slice? tx (get index (get ctx parsed-segwit-version))
+              (get index (get ctx parsed-txouts))
+            ))
+            (unwrap-panic (slice? tx (get index (get ctx parsed-witnesses)) (len tx)))
+          ))))))
         none
       ),
       witnesses: (get witnesses parsed-witnesses),
@@ -614,11 +615,11 @@
 ;;          }),
 ;;      locktime: uint
 ;; })
-;; Returns ERR_OUT_OF_BOUNDS if we read past the end of txbuff.
-;; Returns ERR_VARSLICE_TOO_LONG if we find a scriptPubKey or scriptSig that's too long to parse.
-;; Returns ERR_TOO_MANY_TXOUTS if there are more than eight inputs to read.
-;; Returns ERR_TOO_MANY_TXINS if there are more than eight outputs to read.
-;; Returns ERR_LEFTOVER_DATA if the tx buffer contains leftover data at the end.
+;; Returns (err ERR-OUT-OF-BOUNDS) if we read past the end of txbuff.
+;; Returns (err ERR-VARSLICE-TOO-LONG) if we find a scriptPubKey or scriptSig that's too long to parse.
+;; Returns (err ERR-TOO-MANY-TXOUTS) if there are more than eight inputs to read.
+;; Returns (err ERR-TOO-MANY-TXINS) if there are more than eight outputs to read.
+;; Returns (err ERR-LEFTOVER-DATA) if the tx buffer contains leftover data at the end.
 (define-read-only (parse-tx (tx (buff 4096)))
   (let (
       (ctx {
@@ -633,7 +634,7 @@
     ;; check if it is a non-segwit transaction?
     ;; at least check what happens
     (asserts! (is-eq (len tx) (get index (get ctx parsed-locktime)))
-      ERR_LEFTOVER_DATA
+      (err ERR-LEFTOVER-DATA)
     )
     (ok {
       version: (get uint32 parsed-version),
@@ -678,34 +679,9 @@
   )
 )
 
-;; MOCK section
-(define-constant DEBUG_MODE true)
-
-(define-map mock-burnchain-header-hashes
-  uint
-  (buff 32)
-)
-
-(define-public (mock-add-burnchain-block-header-hash
-    (burn-height uint)
-    (hash (buff 32))
-  )
-  (ok (map-set mock-burnchain-header-hashes burn-height hash))
-)
-
 (define-read-only (get-bc-h-hash (bh uint))
-  (if DEBUG_MODE
-    (match (map-get? mock-burnchain-header-hashes bh)
-      mock-data
-      (some mock-data)
-      ;; fall back to remote data if no mock data available
-      (get-burn-block-info? header-hash bh)
-    )
     (get-burn-block-info? header-hash bh)
-  )
 )
-
-;; END MOCK section
 
 ;; Verify that a block header hashes to a burnchain header hash at a given height.
 ;; Returns true if so; false if not.
@@ -739,13 +715,116 @@
   (> (bit-and val (bit-shift-left u1 bit)) u0)
 )
 
+;; Verify the next step of a Merkle proof.
+;; This hashes cur-hash against the ctr-th hash in proof-hashes, and uses that as the next cur-hash.
+;; The path is a bitfield describing the walk from the txid up to the merkle root:
+;; * if the ith bit is 0, then cur-hash is hashed before the next proof-hash (cur-hash is "left").
+;; * if the ith bit is 1, then the next proof-hash is hashed before cur-hash (cur-hash is "right").
+;; The proof verifies if cur-hash is equal to root-hash, and we're out of proof-hashes to check.
+;; Note, ctr is expected to be < (len proof-hashes), verified can be true only if ctr + 1 == (len proof-hashes).
+(define-private (inner-merkle-proof-verify
+    (ctr uint)
+    (state {
+      path: uint,
+      root-hash: (buff 32),
+      proof-hashes: (list 14 (buff 32)),
+      tree-depth: uint,
+      cur-hash: (buff 32),
+      verified: bool,
+    })
+  )
+  (let (
+      (path (get path state))
+      (is-left (is-bit-set path ctr))
+      (proof-hashes (get proof-hashes state))
+      (cur-hash (get cur-hash state))
+      (root-hash (get root-hash state))
+      (h1 (if is-left
+        (unwrap-panic (element-at proof-hashes ctr))
+        cur-hash
+      ))
+      (h2 (if is-left
+        cur-hash
+        (unwrap-panic (element-at proof-hashes ctr))
+      ))
+      (next-hash (sha256 (sha256 (concat h1 h2))))
+      (is-verified (and (is-eq (+ u1 ctr) (len proof-hashes)) (is-eq next-hash root-hash)))
+    )
+    (merge state {
+      cur-hash: next-hash,
+      verified: is-verified,
+    })
+  )
+)
+
+;; Verify a Merkle proof, given the _reversed_ txid of a transaction, the merkle root of its block, and a proof consisting of:
+;; * The index in the block where the transaction can be found (starting from 0),
+;; * The list of hashes that link the txid to the merkle root,
+;; * The depth of the block's merkle tree (required because Bitcoin does not identify merkle tree nodes as being leaves or intermediates).
+;; The _reversed_ txid is required because that's the order (little-endian) processes them in.
+;; The tx-index is required because it tells us the left/right traversals we'd make if we were walking down the tree from root to transaction,
+;; and is thus used to deduce the order in which to hash the intermediate hashes with one another to link the txid to the merkle root.
+;; Returns (ok true) if the proof is valid.
+;; Returns (ok false) if the proof is invalid.
+;; Returns (err ERR-PROOF-TOO-SHORT) if the proof's hashes aren't long enough to link the txid to the merkle root.
+(define-read-only (verify-merkle-proof
+    (reversed-txid (buff 32))
+    (merkle-root (buff 32))
+    (proof {
+      tx-index: uint,
+      hashes: (list 14 (buff 32)),
+      tree-depth: uint,
+    })
+  )
+  (if (> (get tree-depth proof) (len (get hashes proof)))
+    (err ERR-PROOF-TOO-SHORT)
+    (ok (get verified
+      (fold inner-merkle-proof-verify
+        (unwrap-panic (slice? (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13) u0
+          (get tree-depth proof)
+        )) {
+        path: (+ (pow u2 (get tree-depth proof)) (get tx-index proof)),
+        root-hash: merkle-root,
+        proof-hashes: (get hashes proof),
+        cur-hash: reversed-txid,
+        tree-depth: (get tree-depth proof),
+        verified: false,
+      })
+    ))
+  )
+)
+
 ;; Helper for wtxid commitments
 
-;; Returns true if the scriptPubKey is a BIP-141 witness-commitment output, i.e. it
-;; starts with the 6-byte commitment header 0x6a24aa21a9ed (OP_RETURN, 36-byte push,
-;; and the 0xaa21a9ed magic). The 32 bytes following the header hold the commitment.
-(define-read-only (is-commitment-pattern (scriptPubKey (buff 1024)))
-  (is-eq (slice? scriptPubKey u0 u6) (some 0x6a24aa21a9ed))
+;; Gets the scriptPubKey in the last output that follows the 0x6a24aa21a9ed pattern regardless of its content
+;; as per BIP-0141 (https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure)
+(define-read-only (get-commitment-scriptPubKey (outs (list 50 {
+  value: uint,
+  scriptPubKey: (buff 1376),
+})))
+  (fold inner-get-commitment-scriptPubKey outs 0x)
+)
+
+(define-read-only (inner-get-commitment-scriptPubKey
+    (out {
+      value: uint,
+      scriptPubKey: (buff 1376),
+    })
+    (result (buff 1376))
+  )
+  (let ((commitment (get scriptPubKey out)))
+    (if (is-commitment-pattern commitment)
+      commitment
+      result
+    )
+  )
+)
+
+;; Returns false, if scriptPubKey does not have the commitment prefix.
+(define-read-only (is-commitment-pattern (scriptPubKey (buff 1376)))
+  (asserts! (is-eq (unwrap! (slice? scriptPubKey u0 u6) false) 0x6a24aa21a9ed)
+    false
+  )
 )
 
 ;;
@@ -772,7 +851,7 @@
 ;;
 ;; Returns (ok true) if the proof checks out.
 ;; Returns (ok false) if not.
-;; Returns the native verify-merkle-proof error if the proof is malformed for the merkle tree.
+;; Returns (err ERR-PROOF-TOO-SHORT) if the proof doesn't contain enough intermediate hash nodes in the merkle tree.
 (define-read-only (was-tx-mined-compact
     (height uint)
     (tx (buff 4096))
@@ -780,10 +859,10 @@
     (proof {
       tx-index: uint,
       hashes: (list 14 (buff 32)),
-      tx-count: uint,
+      tree-depth: uint,
     })
   )
-  (let ((block (unwrap! (parse-block-header header) ERR_BAD_HEADER)))
+  (let ((block (unwrap! (parse-block-header header) (err ERR-BAD-HEADER))))
     (was-tx-mined-internal height tx header (get merkle-root block) proof)
   )
 )
@@ -801,7 +880,7 @@
     (proof {
       tx-index: uint,
       hashes: (list 14 (buff 32)),
-      tx-count: uint,
+      tree-depth: uint,
     })
   )
   (if (verify-block-header header height)
@@ -813,17 +892,13 @@
       (asserts!
         (or
           (is-eq merkle-root txid) ;; true, if the transaction is the only transaction
-          ;; native verify-merkle-proof returns a bool, not a response, and needs the
-          ;; block's real transaction count for Bitcoin's odd-row duplication rule
-          (verify-merkle-proof reversed-txid (reverse-buff32 merkle-root)
-            (get tx-index proof) (get tx-count proof) (get hashes proof)
-          )
+          (try! (verify-merkle-proof reversed-txid (reverse-buff32 merkle-root) proof))
         )
-        ERR_INVALID_MERKLE_PROOF
+        (err ERR-INVALID-MERKLE-PROOF)
       )
       (ok txid)
     )
-    ERR_HEADER_HEIGHT_MISMATCH
+    (err ERR-HEADER-HEIGHT-MISMATCH)
   )
 )
 
@@ -832,19 +907,17 @@
 ;; It takes
 ;; a) the bitcoin block height, the transaction "tx" with witness data,
 ;;    the bitcoin block header, the tx index in the block and
-;; b) the number of transactions in the block "tx-count" and
+;; b) the depth of merkle proof of the block and
 ;; c) the merkle proof of the wtxid "wproof", its root "witness-merkle-proof",
 ;;    the witness reserved value and
-;; d) the coinbase transaction "ctx" without witnesses (non-segwit), its merkle proof "cproof"
-;;    and the index of its output that carries the BIP-141 witness commitment "cb-commitment-vout".
+;; d) the coinbase transaction "ctx" without witnesses (non-segwit) and its merkle proof "cproof".
 ;;
 ;; It determines that:
 ;; * the block header corresponds to the block that was mined at the given Bitcoin height
 ;; * the coinbase tx was mined and it contains the commitment to the wtxids
 ;; * the wtxid of the tx is part of the commitment.
 ;;
-;; tx-count is the block's transaction count; the wtxid (witness) merkle tree and the
-;; txid merkle tree have the same number of leaves, so a single tx-count covers both.
+;; The tree depth for wproof and cproof are the same.
 ;; The coinbase tx index is always 0.
 ;;
 ;; It returns (ok wtxid), if it was mined.
@@ -853,12 +926,11 @@
     (wtx (buff 4096))
     (header (buff 80))
     (tx-index uint)
-    (tx-count uint)
+    (tree-depth uint)
     (wproof (list 14 (buff 32)))
     (witness-merkle-root (buff 32))
     (witness-reserved-value (buff 32))
     (cb-tx (buff 4096))
-    (cb-commitment-vout uint)
     (cb-proof (list 14 (buff 32)))
   )
   (begin
@@ -866,358 +938,28 @@
     (try! (was-tx-mined-compact height cb-tx header {
       tx-index: u0,
       hashes: cb-proof,
-      tx-count: tx-count,
+      tree-depth: tree-depth,
     }))
     (let (
-        ;; Clarity 6 native parse: read the BIP-141 witness-commitment output directly
-        ;; by index, instead of parsing every coinbase output and folding to find it.
-        (witness-out (get script (try! (get-bitcoin-tx-output? cb-tx cb-commitment-vout))))
+        (witness-out (get-commitment-scriptPubKey (get outs (try! (parse-tx cb-tx)))))
         (final-hash (sha256 (sha256 (concat witness-merkle-root witness-reserved-value))))
         (reversed-wtxid (get-reversed-txid wtx))
         (wtxid (reverse-buff32 reversed-wtxid))
       )
-      ;; verify the caller-named output is actually a BIP-141 witness-commitment output
-      (asserts! (is-commitment-pattern witness-out) ERR_INVALID_COMMITMENT)
-      ;; verify wtxid commitment: the 32 bytes after the 6-byte header equal the computed
-      ;; root hash. BIP-141 permits extra data after the commitment, so only the
-      ;; first 38 bytes (header + hash) are checked, not the full scriptPubKey.
-      (asserts!
-        (is-eq (unwrap! (slice? witness-out u6 u38) ERR_INVALID_COMMITMENT)
-          final-hash
-        )
-        ERR_INVALID_COMMITMENT
+      ;; verify wtxid commitment
+      (asserts! (is-eq witness-out (concat 0x6a24aa21a9ed final-hash))
+        (err ERR-INVALID-COMMITMENT)
       )
-      ;; verify witness merkle tree (native verify-merkle-proof returns a bool)
+      ;; verify witness merkle tree
       (asserts!
-        (verify-merkle-proof reversed-wtxid witness-merkle-root tx-index tx-count
-          wproof
-        )
-        ERR_WITNESS_TX_NOT_IN_COMMITMENT
+        (try! (verify-merkle-proof reversed-wtxid witness-merkle-root {
+          tx-index: tx-index,
+          hashes: wproof,
+          tree-depth: tree-depth,
+        }))
+        (err ERR-WITNESS-TX-NOT-IN-COMMITMENT)
       )
       (ok wtxid)
-    )
-  )
-)
-
-;; #[env(simnet)]
-;; ---------------------------------------------------------------------------
-;; Property-based tests for Rendezvous: `rv . clarity-bitcoin test`
-;;
-;; These are private `test-*` functions annotated with #[env(simnet)], so they
-;; are included only in simnet test sessions and stripped from testnet/mainnet
-;; deployments. Return semantics: (ok true) = property holds, (ok false) = input
-;; discarded, (err ...) = property violated (a counterexample was found).
-;;
-;; 32-byte values are derived with sha256 so the fuzzer never has to hit an exact
-;; buffer length, which keeps the discard rate at zero.
-;; ---------------------------------------------------------------------------
-;;
-;; reverse-buff32 is its own inverse: reversing twice returns the input.
-;; #[env(simnet)]
-(define-private (test-reverse-buff32-involution (preimage (buff 1024)))
-  (let ((b (sha256 preimage)))
-    (begin
-      (asserts! (is-eq (reverse-buff32 (reverse-buff32 b)) b) (err u1))
-      (ok true)
-    )
-  )
-)
-
-;; The two txid helpers are consistent: get-txid is the byte-reverse of
-;; get-reversed-txid for any transaction buffer.
-;; #[env(simnet)]
-(define-private (test-txid-double-reverse (tx (buff 4096)))
-  (begin
-    (asserts! (is-eq (get-txid tx) (reverse-buff32 (get-reversed-txid tx)))
-      (err u2)
-    )
-    (ok true)
-  )
-)
-
-;; In a single-transaction block the txid IS the merkle root, so an empty proof
-;; verifies inclusion.
-;; #[env(simnet)]
-(define-private (test-merkle-single-tx (preimage (buff 1024)))
-  (let ((txid (sha256 preimage)))
-    (begin
-      (asserts! (verify-merkle-proof txid txid u0 u1 (list)) (err u3))
-      (ok true)
-    )
-  )
-)
-
-;; Soundness: an empty proof must NOT verify a transaction against a different
-;; merkle root (a single-tx block where txid != root).
-;; #[env(simnet)]
-(define-private (test-merkle-wrong-root
-    (p1 (buff 1024))
-    (p2 (buff 1024))
-  )
-  (let (
-      (txid (sha256 p1))
-      (root (sha256 p2))
-    )
-    (if (is-eq txid root)
-      (ok false) ;; discard the (cryptographically impossible) hash collision
-      (begin
-        (asserts! (not (verify-merkle-proof txid root u0 u1 (list))) (err u4))
-        (ok true)
-      )
-    )
-  )
-)
-
-;; CVE-2012-2459 resistance: a 2-leaf tree whose two leaves are identical (which
-;; lets an attacker forge a tree by duplicating nodes) must NOT verify.
-;; #[env(simnet)]
-(define-private (test-merkle-mutation-resistance (preimage (buff 1024)))
-  (let (
-      (leaf (sha256 preimage))
-      (root (sha256 (sha256 (concat leaf leaf))))
-    )
-    (begin
-      (asserts! (not (verify-merkle-proof leaf root u0 u2 (list leaf))) (err u30))
-      (ok true)
-    )
-  )
-)
-
-;; A two-transaction block: both leaves verify against the manually computed
-;; double-sha256 root, with the sibling supplied in the proof.
-;; #[env(simnet)]
-(define-private (test-merkle-two-leaves
-    (p0 (buff 1024))
-    (p1 (buff 1024))
-  )
-  (let (
-      (leaf0 (sha256 p0))
-      (leaf1 (sha256 p1))
-      (root (sha256 (sha256 (concat leaf0 leaf1))))
-    )
-    (if (is-eq leaf0 leaf1)
-      ;; a pair of identical hashes is rejected as a CVE-2012-2459 mutation, so it
-      ;; is not a valid 2-leaf tree to check here (see test-merkle-mutation-resistance)
-      (ok false)
-      (begin
-        ;; tx at index 0, its sibling is leaf1
-        (asserts! (verify-merkle-proof leaf0 root u0 u2 (list leaf1)) (err u5))
-        ;; tx at index 1, its sibling is leaf0
-        (asserts! (verify-merkle-proof leaf1 root u1 u2 (list leaf0)) (err u6))
-        (ok true)
-      )
-    )
-  )
-)
-
-;; Parsing soundness: parse-block-header extracts the merkle-root field as the
-;; byte-reverse of header bytes 36..68. The header is built from fuzzed pieces so
-;; it is always exactly 80 bytes.
-;; #[env(simnet)]
-(define-private (test-parse-block-header-merkle-root
-    (p-version (buff 1024))
-    (p-parent (buff 1024))
-    (p-mroot (buff 1024))
-    (p-rest (buff 1024))
-  )
-  (let (
-      (mroot (sha256 p-mroot))
-      (header (concat
-        (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-version) u0 u4)) u4))
-        (concat (sha256 p-parent)
-          (concat mroot
-            (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-rest) u0 u12)) u12))
-          ))
-      ))
-    )
-    (match (parse-block-header header)
-      parsed (begin
-        (asserts! (is-eq (get merkle-root parsed) (reverse-buff32 mroot))
-          (err u7)
-        )
-        (ok true)
-      )
-      err (ok false)
-    )
-  )
-)
-
-;; A four-transaction block (tree depth 2): leaves verify against the manually
-;; computed root with the two sibling hashes supplied in the proof.
-;; #[env(simnet)]
-(define-private (test-merkle-four-leaves
-    (p0 (buff 1024))
-    (p1 (buff 1024))
-    (p2 (buff 1024))
-    (p3 (buff 1024))
-  )
-  (let (
-      (l0 (sha256 p0))
-      (l1 (sha256 p1))
-      (l2 (sha256 p2))
-      (l3 (sha256 p3))
-      (h01 (sha256 (sha256 (concat l0 l1))))
-      (h23 (sha256 (sha256 (concat l2 l3))))
-      (root (sha256 (sha256 (concat h01 h23))))
-    )
-    (if (or
-        (is-eq l0 l1)
-        (is-eq l2 l3)
-        (is-eq h01 h23)
-      )
-      ;; any pair of identical sibling hashes is rejected as a CVE-2012-2459 mutation
-      (ok false)
-      (begin
-        ;; leaf 0: level-0 sibling l1, level-1 sibling h23
-        (asserts! (verify-merkle-proof l0 root u0 u4 (list l1 h23)) (err u8))
-        ;; leaf 2: level-0 sibling l3, level-1 sibling h01
-        (asserts! (verify-merkle-proof l2 root u2 u4 (list l3 h01)) (err u9))
-        (ok true)
-      )
-    )
-  )
-)
-
-;; read-uint32 advances the cursor by exactly four bytes when reading in bounds.
-;; #[env(simnet)]
-(define-private (test-read-uint32-advances (data (buff 4096)))
-  (if (>= (len data) u4)
-    (match (read-uint32 {
-      txbuff: data,
-      index: u0,
-    })
-      r (begin
-        (asserts! (is-eq (get index (get ctx r)) u4) (err u10))
-        (asserts!
-          (is-eq (get uint32 r)
-            (buff-to-uint-le (unwrap-panic (as-max-len? (unwrap-panic (slice? data u0 u4)) u4)))
-          )
-          (err u11)
-        )
-        (ok true)
-      )
-      e (ok false)
-    )
-    ;; discard reads that run past the end
-    (ok false)
-  )
-)
-
-;; A varint whose first byte is <= 252 encodes that byte and advances by one.
-;; #[env(simnet)]
-(define-private (test-read-varint-single-byte (data (buff 4096)))
-  (if (and
-      (>= (len data) u1)
-      (<= (buff-to-uint-le (unwrap-panic (element-at data u0))) u252)
-    )
-    (match (read-varint {
-      txbuff: data,
-      index: u0,
-    })
-      r (begin
-        (asserts!
-          (is-eq (get varint r)
-            (buff-to-uint-le (unwrap-panic (element-at data u0)))
-          )
-          (err u12)
-        )
-        (asserts! (is-eq (get index (get ctx r)) u1) (err u13))
-        (ok true)
-      )
-      e (ok false)
-    )
-    (ok false)
-  )
-)
-
-;; is-commitment-pattern matches exactly the BIP-141 6-byte commitment header.
-;; #[env(simnet)]
-(define-private (test-is-commitment-pattern (p (buff 1024)))
-  (let (
-      (yes (concat 0x6a24aa21a9ed (sha256 p))) ;; valid header + 32 bytes
-      (no (concat 0x00 (sha256 p))) ;; wrong first byte
-    )
-    (begin
-      (asserts! (is-commitment-pattern yes) (err u14))
-      (asserts! (not (is-commitment-pattern no)) (err u15))
-      (ok true)
-    )
-  )
-)
-
-;; Round-trip: a transaction serialized by clarity-bitcoin-helper's concat-tx
-;; parses back to the same parts with parse-tx. Numeric fields come back as
-;; little-endian uints and the outpoint hash comes back byte-reversed, so the
-;; comparisons account for that. All buffers are derived with sha256 so the
-;; fuzzer always produces the exact field lengths (and scripts < 253 bytes).
-;; #[env(simnet)]
-(define-private (test-tx-concat-parse-roundtrip
-    (p-version (buff 1024))
-    (p-hash (buff 1024))
-    (p-index (buff 1024))
-    (p-script-sig (buff 1024))
-    (p-sequence (buff 1024))
-    (p-value (buff 1024))
-    (p-script-pubkey (buff 1024))
-    (p-locktime (buff 1024))
-  )
-  (let (
-      (version (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-version) u0 u4)) u4)))
-      (hash (sha256 p-hash))
-      (index (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-index) u0 u4)) u4)))
-      (script-sig (sha256 p-script-sig))
-      (sequence (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-sequence) u0 u4)) u4)))
-      (value (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-value) u0 u8)) u8)))
-      (script-pubkey (sha256 p-script-pubkey))
-      (locktime (unwrap-panic (as-max-len? (unwrap-panic (slice? (sha256 p-locktime) u0 u4)) u4)))
-      (raw (contract-call? .clarity-bitcoin-helper concat-tx {
-        version: version,
-        ins: (list
-          {
-            outpoint: {
-              hash: hash,
-              index: index,
-            },
-            scriptSig: (unwrap-panic (as-max-len? script-sig u1376)),
-            sequence: sequence,
-          }
-        ),
-        outs: (list
-          {
-            value: value,
-            scriptPubKey: (unwrap-panic (as-max-len? script-pubkey u1376)),
-          }
-        ),
-        locktime: locktime,
-      }))
-    )
-    (match (parse-tx raw)
-      parsed (let (
-          (pin (unwrap-panic (element-at (get ins parsed) u0)))
-          (pout (unwrap-panic (element-at (get outs parsed) u0)))
-        )
-        (asserts! (is-eq (get version parsed) (buff-to-uint-le version))
-          (err u20)
-        )
-        (asserts! (is-eq (get locktime parsed) (buff-to-uint-le locktime))
-          (err u21)
-        )
-        (asserts! (is-eq (len (get ins parsed)) u1) (err u22))
-        (asserts! (is-eq (len (get outs parsed)) u1) (err u23))
-        ;; parse-tx returns the outpoint hash byte-reversed
-        (asserts! (is-eq (get hash (get outpoint pin)) (reverse-buff32 hash))
-          (err u24)
-        )
-        (asserts! (is-eq (get index (get outpoint pin)) (buff-to-uint-le index))
-          (err u25)
-        )
-        (asserts! (is-eq (get scriptSig pin) script-sig) (err u26))
-        (asserts! (is-eq (get sequence pin) (buff-to-uint-le sequence)) (err u27))
-        (asserts! (is-eq (get value pout) (buff-to-uint-le value)) (err u28))
-        (asserts! (is-eq (get scriptPubKey pout) script-pubkey) (err u29))
-        (ok true)
-      )
-      err (ok false)
     )
   )
 )

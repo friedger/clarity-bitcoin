@@ -1,5 +1,9 @@
-import { tx as Tx } from '@hirosystems/clarinet-sdk';
-import { hexToBytes } from '@noble/hashes/utils';
+/**
+ * @vitest-environment clarinet
+ * @vitest-environment-options { "manifestPath": "./Clarinet.remote.toml", "initBeforeEach": true }
+ */
+import { tx as Tx } from '@stacks/clarinet-sdk';
+import { hexToBytes } from '@noble/hashes/utils.js';
 import { bufferCV, Cl, principalCV } from '@stacks/transactions';
 import { describe, expect, it } from 'vitest';
 import { cachedProof } from './cachedProofs';
@@ -36,7 +40,7 @@ describe('Send to first input compact', () => {
           Cl.tuple({
             'tx-index': Cl.uint(1),
             hashes: Cl.list([]),
-            'tree-depth': Cl.uint(1),
+            'tx-count': Cl.uint(1),
           }),
         ],
         deployer
@@ -65,6 +69,7 @@ describe('Send to first input compact', () => {
     // https://mempool.space/api/tx/f5a993361e1db33c3b2323e39eda6c8ee70bc08da1429d0a2f81063751e55c73/merkle-proof
     const merkleProof = {
       block_height: 883230,
+      tx_count: 803, // number of transactions in block 883230
       merkle: [
         'd59c146d5f87b8c14fbeffb4189fe173aa4c8d6633f4597e3fab2591594af1a4',
         '498ea075e8ab8f6d4a678d6c24bc8a82304c31744e3067326ca9c242a275f604',
@@ -96,7 +101,7 @@ describe('Send to first input compact', () => {
                 .map(b => b.reverse())
                 .map(bufferCV)
             ),
-            'tree-depth': Cl.uint(merkleProof.merkle.length),
+            'tx-count': Cl.uint(merkleProof.tx_count),
           }),
         ],
         deployer

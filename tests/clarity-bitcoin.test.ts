@@ -1,7 +1,7 @@
 import { Cl } from '@stacks/transactions';
 import { describe, expect, it } from 'vitest';
-import { Error, verifyMerkleProof } from './clients/clarity-bitcoin-client.ts';
-import { hexToBytes } from '@noble/hashes/utils';
+import { verifyMerkleProof } from './clients/clarity-bitcoin-client.ts';
+import { hexToBytes } from '@noble/hashes/utils.js';
 const accounts = simnet.getAccounts();
 
 describe('Bitcoin library', () => {
@@ -53,7 +53,7 @@ describe('Bitcoin library', () => {
       );
     } catch (e: any) {
       expect(e.toString()).toBe(
-        'Call contract function error: clarity-bitcoin::reverse-buff32(0x01) -> Error calling contract function: Runtime error while interpreting ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin: Runtime(UnwrapFailure, Some([FunctionIdentifier { identifier: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin:reverse-buff32" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:special_concat" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:native_unwrap" }]))'
+        `Call contract function error: clarity-bitcoin::reverse-buff32(0x01) -> Error calling contract function 'reverse-buff32': Runtime error while interpreting ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin: Runtime(UnwrapFailure, Some([FunctionIdentifier { identifier: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.clarity-bitcoin:reverse-buff32" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:special_concat" }, FunctionIdentifier { identifier: "_native_:special_as_max_len" }, FunctionIdentifier { identifier: "_native_:native_unwrap" }]))`
       );
     }
   });
@@ -72,8 +72,8 @@ describe('Bitcoin library', () => {
           // 1 intermediate double-sha256 hashes
           hexToBytes('7614716e165ae0cada0d4cd994bb195ca8010fd17c388825ca4c81843d14f9d8'),
         ],
-        txIndex: 2, // this transaction is at index 6 in the block (starts from 0)
-        treeDepth: 2, // merkle tree depth (must be given because we can't infer leaf/non-leaf nodes)
+        txIndex: 2, // this transaction is at index 2 in the block (starts from 0)
+        txCount: 3, // number of transactions in the block (native applies the odd-row duplication rule)
       },
       deployer
     );
@@ -95,7 +95,7 @@ describe('Bitcoin library', () => {
           hexToBytes('e827331b1fe7a2689fbc23d14cd21317c699596cbca222182a489322ece1fa74'),
         ],
         txIndex: 6, // this transaction is at index 6 in the block (starts from 0)
-        treeDepth: 4, // merkle tree depth (must be given because we can't infer leaf/non-leaf nodes)
+        txCount: 10, // block 150000 has 10 transactions
       },
       deployer
     );
@@ -116,7 +116,7 @@ describe('Bitcoin library', () => {
           hexToBytes('e827331b1fe7a2689fbc23d14cd21317c699596cbca222182a489322ece1fa74'),
         ],
         txIndex: 6,
-        treeDepth: 4,
+        txCount: 10,
       },
       deployer
     );
@@ -137,7 +137,7 @@ describe('Bitcoin library', () => {
           hexToBytes('e827331b1fe7a2689fbc23d14cd21317c699596cbca222182a489322ece1fa74'),
         ],
         txIndex: 6,
-        treeDepth: 4,
+        txCount: 10,
       },
       deployer
     );
@@ -159,7 +159,7 @@ describe('Bitcoin library', () => {
           hexToBytes('e827331b1fe7a2689fbc23d14cd21317c699596cbca222182a489322ece1fa74'),
         ],
         txIndex: 6,
-        treeDepth: 4,
+        txCount: 10,
       },
       deployer
     );
@@ -181,7 +181,7 @@ describe('Bitcoin library', () => {
         ],
         // CORRUPTED
         txIndex: 7,
-        treeDepth: 4,
+        txCount: 10,
       },
       deployer
     );
@@ -189,7 +189,7 @@ describe('Bitcoin library', () => {
     expect(response.result).toBeOk(Cl.bool(false));
   });
 
-  it('Ensure that merkle proof with smaller tree depth is detected', () => {
+  it('Ensure that merkle proof with too small tx count is detected', () => {
     const deployer = accounts.get('deployer')!;
     let response = verifyMerkleProof(
       hexToBytes('25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5afd46cf217ad9'),
@@ -202,15 +202,15 @@ describe('Bitcoin library', () => {
           hexToBytes('e827331b1fe7a2689fbc23d14cd21317c699596cbca222182a489322ece1fa74'),
         ],
         txIndex: 6,
-        // CORRUPTED
-        treeDepth: 3,
+        // CORRUPTED: real block has 10 transactions, 8 puts index 6 in a different tree shape
+        txCount: 8,
       },
       deployer
     );
 
     expect(response.result).toBeOk(Cl.bool(false));
   });
-  it('Ensure that merkle proof with larger tree depth is detected', () => {
+  it('Ensure that merkle proof with too large tx count is detected', () => {
     const deployer = accounts.get('deployer')!;
     let response = verifyMerkleProof(
       hexToBytes('25c6a1f8c0b5be2bee1e8dd3478b4ec8f54bbc3742eaf90bfb5afd46cf217ad9'),
@@ -223,13 +223,13 @@ describe('Bitcoin library', () => {
           hexToBytes('e827331b1fe7a2689fbc23d14cd21317c699596cbca222182a489322ece1fa74'),
         ],
         txIndex: 6,
-        // TOO LONG
-        treeDepth: 5,
+        // CORRUPTED: 32 needs a deeper tree (5 levels) than the 4 sibling hashes provide
+        txCount: 32,
       },
       deployer
     );
 
-    expect(response.result).toBeErr(Cl.uint(Error.ERR_PROOF_TOO_SHORT));
+    expect(response.result).toBeOk(Cl.bool(false));
   });
   it('Ensure is-bit-set determines if the bit in a uint is set to 1', () => {
     const deployer = accounts.get('deployer')!;

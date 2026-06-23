@@ -1,4 +1,4 @@
-import { hexToBytes } from '@noble/hashes/utils';
+import { hexToBytes } from '@noble/hashes/utils.js';
 import { TxProofResult } from 'bitcoin-tx-proof';
 import * as bitcoinjs from 'bitcoinjs-lib';
 
@@ -46,10 +46,13 @@ const merkleProof = {
   ],
   pos: 1,
 };
+// block 883230 has 803 transactions; the native verify-merkle-proof needs the real
+// transaction count (not the tree depth) for Bitcoin's odd-row duplication rule.
+const txCount = 803;
 const proof = {
   txIndex: merkleProof.pos,
   hashes: merkleProof.merkle.map(hexToBytes).map(h => h.reverse()),
-  treeDepth: merkleProof.merkle.length,
+  txCount,
 };
 
 const coinbaseTxId = '17a992d8e38f314cec47136e3059305091d105053c2a98adb7476bf9c0b21270';
@@ -86,7 +89,7 @@ const witnessReservedValue = '00000000000000000000000000000000000000000000000000
 const proofCoinbase = {
   txIndex: coinbaseMerkleProof.pos,
   hashes: coinbaseMerkleProof.merkle.map(hexToBytes).map(h => h.reverse()),
-  treeDepth: coinbaseMerkleProof.merkle.length,
+  txCount,
 };
 
 export const manualProofData = {
@@ -97,4 +100,5 @@ export const manualProofData = {
   coinbaseTxId,
   legacyCoinbaseTxHex,
   proofCoinbase,
+  txCount,
 };

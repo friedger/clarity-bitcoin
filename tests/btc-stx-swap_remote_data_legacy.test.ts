@@ -1,5 +1,9 @@
-import { tx } from '@hirosystems/clarinet-sdk';
-import { hexToBytes } from '@noble/hashes/utils';
+/**
+ * @vitest-environment clarinet
+ * @vitest-environment-options { "manifestPath": "./Clarinet.remote.toml", "initBeforeEach": true }
+ */
+import { tx } from '@stacks/clarinet-sdk';
+import { hexToBytes } from '@noble/hashes/utils.js';
 import { intToBytes } from '@stacks/common';
 import {
   boolCV,
@@ -28,9 +32,10 @@ describe('User can finalize btc-stx swap', () => {
 
   test('Ensure that remote data is as expected', () => {
     const bbh = simnet.execute('burn-block-height');
-    expect(bbh.result).toBeUint(blockHeight);
+    // deploying the Clarity 6 (epoch 4.0) contracts advances the fork tip past the proof block
+    expect(bbh.result).toBeUint(blockHeight + 1);
 
-    var bbhh = simnet.execute('(get-burn-block-info? header-hash burn-block-height)');
+    var bbhh = simnet.execute(`(get-burn-block-info? header-hash u${blockHeight})`);
     expect(bbhh.result).toBeSome(bufferCV(hexToBytes(bitcoinBlockHeaderHash)));
   });
 
@@ -54,6 +59,7 @@ describe('User can finalize btc-stx swap', () => {
         '51a1c02147ab62b9a5f67582536e4e7913d944660722b8f78a83158440752c85',
       ],
       pos: 6,
+      tx_count: 803, // number of transactions in block 883230
     };
 
     // get transaction object
@@ -63,24 +69,24 @@ describe('User can finalize btc-stx swap', () => {
     const hashes = merkleProof.merkle.map(hexToBytes).map(h => h.reverse());
 
     const tx2 = tupleCV({
-      version: bufferCV(intToBytes(txObject.version, false, 4).reverse()),
-      locktime: bufferCV(intToBytes(txObject.locktime, false, 4).reverse()),
+      version: bufferCV(intToBytes(txObject.version, 4).reverse()),
+      locktime: bufferCV(intToBytes(txObject.locktime, 4).reverse()),
       ins: listCV(
         txObject.vin.map((input: any) => {
           return tupleCV({
             outpoint: tupleCV({
               hash: bufferCV(hexToBytes(input.txid).reverse()),
-              index: bufferCV(intToBytes(input.vout, false, 4).reverse()),
+              index: bufferCV(intToBytes(input.vout, 4).reverse()),
             }),
             scriptSig: bufferCV(hexToBytes(input.scriptSig.hex)),
-            sequence: bufferCV(intToBytes(input.sequence, false, 4).reverse()),
+            sequence: bufferCV(intToBytes(input.sequence, 4).reverse()),
           });
         })
       ),
       outs: listCV(
         txObject.vout.map((output: any) => {
           return tupleCV({
-            value: bufferCV(intToBytes(output.value * 100_000_000, false, 8).reverse()),
+            value: bufferCV(intToBytes(output.value * 100_000_000, 8).reverse()),
             scriptPubKey: bufferCV(hexToBytes(output.scriptPubKey.hex)),
           });
         })
@@ -125,7 +131,7 @@ describe('User can finalize btc-stx swap', () => {
           tupleCV({
             'tx-index': uintCV(merkleProof.pos),
             hashes: listCV(hashes.map(bufferCV)),
-            'tree-depth': uintCV(hashes.length),
+            'tx-count': uintCV(merkleProof.tx_count),
           }),
         ],
         bob

@@ -1,0 +1,52 @@
+id: 0
+name: Testnet deployment
+network: testnet
+stacks-node: https://api.testnet.hiro.so
+bitcoin-node: http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332
+plan:
+  batches:
+  - id: 0
+    transactions:
+    - transaction-type: contract-publish
+      contract-name: clarity-bitcoin
+      expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      cost: 315600
+      path: contracts/clarity-bitcoin.clar
+      anchor-block-only: true
+      clarity-version: 6
+    - transaction-type: contract-publish
+      contract-name: clarity-bitcoin-helper
+      expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      cost: 37790
+      path: contracts/clarity-bitcoin-helper.clar
+      anchor-block-only: true
+      clarity-version: 6
+    - transaction-type: contract-publish
+      contract-name: clarity-bitcoin-helper-wtx
+      expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      cost: 39120
+      path: contracts/examples/clarity-bitcoin-helper-wtx.clar
+      anchor-block-only: true
+      clarity-version: 6
+    - transaction-type: contract-publish
+      contract-name: btc-stx-swap
+      expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      cost: 79950
+      path: contracts/examples/btc-stx-swap.clar
+      anchor-block-only: true
+      clarity-version: 2
+    - transaction-type: contract-publish
+      contract-name: helper
+      expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      cost: 14520
+      path: contracts/helper.clar
+      anchor-block-only: true
+      clarity-version: 6
+    - transaction-type: contract-publish
+      contract-name: send-to-first-input-compact
+      expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      cost: 15300
+      path: contracts/examples/send-to-first-input-compact.clar
+      anchor-block-only: true
+      clarity-version: 2
+    epoch: '4.0'
