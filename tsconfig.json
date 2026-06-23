@@ -3,10 +3,10 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ESNext"],
     "skipLibCheck": true,
 
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "node_modules/@hirosystems/clarinet-sdk/vitest-helpers/src",
+    "node_modules/@stacks/clarinet-sdk/vitest-helpers/src",
     "node_modules/bitcoin-tx-proof/dist",
     "tests"
   ]
